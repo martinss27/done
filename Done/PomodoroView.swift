@@ -27,7 +27,14 @@ struct PomodoroView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        // Header inline rather than a navigation title, so "focus" sits at the
+        // same height as "insights" one tab over.
+        VStack(spacing: 0) {
+            Text("focus")
+                .font(.largeTitle.weight(.bold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
             ScrollView {
                 VStack(spacing: 24) {
                     dial
@@ -36,7 +43,6 @@ struct PomodoroView: View {
                 }
                 .padding(16)
             }
-            .navigationTitle("focus")
             .familyActivityPicker(isPresented: $picking, selection: $blocks.focusAllowed)
             .onAppear { if paused == 0 && !isRunning { paused = minutes(for: phase) * 60 } }
             .onReceive(tick) { _ in
@@ -55,7 +61,7 @@ struct PomodoroView: View {
         VStack(spacing: 8) {
             Text(phase.title)
                 .font(.headline)
-                .foregroundStyle(phase.isBreak ? .green : .orange)
+                .foregroundStyle(phase.isBreak ? .green : .white)
             Text(String(format: "%02d:%02d", remaining / 60, remaining % 60))
                 .font(.system(size: 72, weight: .light, design: .rounded))
                 .monospacedDigit()
@@ -63,7 +69,7 @@ struct PomodoroView: View {
             Text("round \(completedFocuses + (phase == .focus ? 1 : 0))")
                 .font(.caption).foregroundStyle(.secondary)
         }
-        .padding(.top, 24)
+        .padding(.top, 12)
     }
 
     private var controls: some View {
@@ -73,7 +79,7 @@ struct PomodoroView: View {
             Button("Skip") { advance() }
                 .buttonStyle(.bordered)
         }
-        .tint(phase.isBreak ? .green : .orange)
+        .tint(phase.isBreak ? .green : .white)
     }
 
     private var settings: some View {
