@@ -108,7 +108,9 @@ private struct HabitCard: View {
                     }
                 }
                 Spacer()
-                Toggle("", isOn: $habit.isEnabled).labelsHidden()
+                Toggle("", isOn: $habit.isEnabled)
+                    .labelsHidden()
+                    .tint(.green)   // app tint is white; without this the knob vanishes into the track
             }
 
             Button(action: onTap) {
