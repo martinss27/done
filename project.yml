@@ -10,11 +10,13 @@ targets:
     sources: [Done, Shared]
     dependencies:
       - target: DoneReport
+      - target: DoneWidget
     info:
       path: Done/Info.plist
       properties:
         UILaunchScreen: {}
         CFBundleDisplayName: Done
+        NSSupportsLiveActivities: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.martinss27.done
@@ -26,6 +28,25 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
 
+  DoneWidget:
+    type: app-extension
+    platform: iOS
+    sources: [Widget, Shared]
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Focus
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.martinss27.done.widget
+        DEVELOPMENT_TEAM: R37QVQP98Y
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+
   DoneReport:
     type: app-extension
     platform: iOS
@@ -33,7 +54,8 @@ targets:
     info:
       path: Report/Info.plist
       properties:
-        CFBundleDisplayName: Done Report
+        CFBundleDisplayName: Done
+        NSSupportsLiveActivities: true Report
         NSExtension:
           NSExtensionPointIdentifier: com.apple.deviceactivityui.report-extension
     settings:

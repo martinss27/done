@@ -1,3 +1,4 @@
+import ActivityKit
 import AudioToolbox
 import UserNotifications
 
@@ -32,5 +33,23 @@ enum FocusAlarm {
 
     static func ring() {
         AudioServicesPlayAlertSound(SystemSoundID(1005))
+    }
+}
+
+/// The round on the lock screen and in the Dynamic Island.
+enum FocusLive {
+    static func start(phase: String, from: Date, to: Date) {
+        end()
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let state = FocusAttributes.ContentState(startedAt: from, endsAt: to, phase: phase)
+        _ = try? Activity.request(attributes: FocusAttributes(),
+                                  content: .init(state: state, staleDate: to),
+                                  pushType: nil)
+    }
+
+    static func end() {
+        for activity in Activity<FocusAttributes>.activities {
+            Task { await activity.end(nil, dismissalPolicy: .immediate) }
+        }
     }
 }
