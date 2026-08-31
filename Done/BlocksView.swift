@@ -13,8 +13,8 @@ struct BlocksView: View {
                     if store.habits.isEmpty {
                         emptyState
                     } else {
-                        ForEach($store.habits) { $habit in
-                            HabitCard(habit: $habit) { running = habit }
+                        ForEach(store.habits) { habit in
+                            HabitCard(habit: binding(for: habit)) { running = habit }
                                 .contextMenu {
                                     Button("Delete", systemImage: "trash", role: .destructive) {
                                         store.habits.removeAll { $0.id == habit.id }
@@ -30,6 +30,18 @@ struct BlocksView: View {
                 SessionView(habit: habit) { store.log($0, for: habit) }
             }
         }
+    }
+
+    /// Binds by id, not by position: a card that outlives its habit reads a
+    /// stale copy instead of an invalid index.
+    private func binding(for habit: Habit) -> Binding<Habit> {
+        Binding(
+            get: { store.habits.first { $0.id == habit.id } ?? habit },
+            set: { updated in
+                guard let i = store.habits.firstIndex(where: { $0.id == updated.id }) else { return }
+                store.habits[i] = updated
+            }
+        )
     }
 
     private var header: some View {
