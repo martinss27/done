@@ -23,6 +23,7 @@ struct PomodoroView: View {
 
     @State private var now = Date()
     @State private var picking = false
+    @State private var alarmOn = true
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var phase: PomodoroPhase { PomodoroPhase(rawValue: phaseRaw) ?? .focus }
@@ -51,12 +52,13 @@ struct PomodoroView: View {
             }
             .familyActivityPicker(isPresented: $picking, selection: $blocks.focusAllowed)
             .onAppear { if paused == 0 && !isRunning { paused = minutes(for: phase) * 60 } }
+            .task { alarmOn = await FocusAlarm.isOn() }
             .onReceive(tick) { _ in
                 guard isRunning else { return }
                 now = Date()
                 if remaining == 0 { FocusAlarm.ring(); advance() }
             }
-            .onChange(of: scene) { if scene == .active { now = Date(); if isRunning && remaining == 0 { advance() } } }
+            .onChange(of: scene) { if scene == .active { Task { alarmOn = await FocusAlarm.isOn() }; now = Date(); if isRunning && remaining == 0 { advance() } } }
             .onChange(of: focusMinutes) { resetIfIdle() }
             .onChange(of: shortBreakMinutes) { resetIfIdle() }
             .onChange(of: longBreakMinutes) { resetIfIdle() }
@@ -145,6 +147,8 @@ struct PomodoroView: View {
             Divider()
             stepper("Long break", $longBreakMinutes, 5...60, step: 5)
             Divider()
+            alarmRow
+            Divider()
             Button { picking = true } label: {
                 HStack {
                     Text("Apps allowed in focus")
@@ -167,6 +171,35 @@ struct PomodoroView: View {
             }
         }
         .padding(.bottom, blocks.isAuthorized ? 0 : 34)
+    }
+
+    /// A round that ends without a sound is a round you miss, so say plainly
+    /// when the permission is missing instead of failing quietly.
+    @ViewBuilder private var alarmRow: some View {
+        if alarmOn {
+            HStack {
+                Label("Alarm on", systemImage: "bell.fill")
+                Spacer()
+            }
+            .padding(12)
+        } else {
+            Button {
+                Task {
+                    if await FocusAlarm.request() {
+                        alarmOn = true
+                    } else if let url = URL(string: UIApplication.openSettingsURLString) {
+                        await UIApplication.shared.open(url)
+                    }
+                }
+            } label: {
+                HStack {
+                    Label("Alarm off — tap to allow notifications", systemImage: "bell.slash")
+                        .foregroundStyle(.orange)
+                    Spacer()
+                }
+                .padding(12)
+            }
+        }
     }
 
     private func stepper(_ title: String, _ value: Binding<Int>, _ range: ClosedRange<Int>, step: Int) -> some View {
