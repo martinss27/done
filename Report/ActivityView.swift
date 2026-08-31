@@ -65,19 +65,19 @@ struct ActivityView: View {
     }
 
     private var summary: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             Text(long(model.totalSeconds))
-                .font(.system(size: 56, weight: .bold, design: .rounded))
+                .font(.system(size: 38, weight: .bold, design: .rounded))
                 .foregroundStyle(.green)
             HStack(spacing: 24) {
                 Label("screen time", systemImage: "hourglass")
                 Label("\(model.pickups) pickups", systemImage: "iphone")
             }
-            .font(.subheadline)
+            .font(.footnote)
             .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
+        .padding(.vertical, 16)
         .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
     }
 

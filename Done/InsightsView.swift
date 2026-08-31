@@ -23,32 +23,41 @@ struct InsightsView: View {
     @State private var hidden = false
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if blocks.isAuthorized {
-                    DeviceActivityReport(.totalActivity, filter: filter)
-                        .blur(radius: hidden ? 18 : 0)
-                } else {
-                    ContentUnavailableView("Screen Time is off",
-                        systemImage: "chart.bar.xaxis",
-                        description: Text("Grant access in Settings to see your usage."))
-                }
-            }
-            .navigationTitle("insights")
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Picker("", selection: $period) {
-                        ForEach(Period.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { hidden.toggle() } label: {
-                        Image(systemName: hidden ? "eye.slash" : "eye")
-                    }
-                }
+        // No navigation bar: the report is a remote view that scrolls itself,
+        // and a large title would slide under it and clip.
+        VStack(spacing: 12) {
+            header
+            if blocks.isAuthorized {
+                DeviceActivityReport(.totalActivity, filter: filter)
+                    .blur(radius: hidden ? 18 : 0)
+            } else {
+                Spacer()
+                ContentUnavailableView("Screen Time is off",
+                    systemImage: "chart.bar.xaxis",
+                    description: Text("Grant access in Settings to see your usage."))
+                Spacer()
             }
         }
+    }
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            Text("insights").font(.largeTitle.weight(.bold))
+            Spacer(minLength: 8)
+            Picker("", selection: $period) {
+                ForEach(Period.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 160)
+            Button { hidden.toggle() } label: {
+                Image(systemName: hidden ? "eye.slash" : "eye")
+                    .font(.headline)
+                    .frame(width: 40, height: 40)
+                    .background(.white.opacity(0.08), in: Circle())
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
 
     private var filter: DeviceActivityFilter {
