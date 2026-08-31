@@ -16,6 +16,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.martinss27.done
+        DEVELOPMENT_TEAM: R37QVQP98Y
+        CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
