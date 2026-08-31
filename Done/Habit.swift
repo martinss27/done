@@ -8,6 +8,8 @@ struct Habit: Identifiable, Codable, Equatable {
     var isEnabled: Bool = true
     var streak: Int = 0
     var lastDone: Date? = nil
+    var progressSeconds: Int = 0
+    var progressDay: Date? = nil
 
     // Decode tolerantly so adding a field never wipes saved habits.
     init(from decoder: Decoder) throws {
@@ -18,11 +20,30 @@ struct Habit: Identifiable, Codable, Equatable {
         isEnabled = try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
         streak = try c.decodeIfPresent(Int.self, forKey: .streak) ?? 0
         lastDone = try c.decodeIfPresent(Date.self, forKey: .lastDone)
+        progressSeconds = try c.decodeIfPresent(Int.self, forKey: .progressSeconds) ?? 0
+        progressDay = try c.decodeIfPresent(Date.self, forKey: .progressDay)
     }
 
     init(name: String, targetMinutes: Int) {
         self.name = name
         self.targetMinutes = targetMinutes
+    }
+
+    /// Seconds already logged for `day`. Progress from an earlier day does not carry over.
+    func secondsLogged(on day: Date, calendar: Calendar = .current) -> Int {
+        guard let progressDay, calendar.isDate(progressDay, inSameDayAs: day) else { return 0 }
+        return progressSeconds
+    }
+
+    /// Adds time to today's tally, completing the habit once it reaches the target.
+    func logging(seconds: Int, on day: Date, calendar: Calendar = .current) -> Habit {
+        var copy = self
+        copy.progressSeconds = min(secondsLogged(on: day, calendar: calendar) + max(seconds, 0), targetMinutes * 60)
+        copy.progressDay = day
+        if copy.progressSeconds >= targetMinutes * 60 {
+            copy = copy.completed(on: day, calendar: calendar)
+        }
+        return copy
     }
 
     func isDone(on day: Date, calendar: Calendar = .current) -> Bool {
@@ -60,8 +81,8 @@ final class HabitStore {
         try? JSONEncoder().encode(habits).write(to: url)
     }
 
-    func complete(_ habit: Habit) {
-        guard let i = habits.firstIndex(where: { $0.id == habit.id }) else { return }
-        habits[i] = habits[i].completed(on: Date())
+    func log(_ seconds: Int, for habit: Habit) {
+        guard seconds > 0, let i = habits.firstIndex(where: { $0.id == habit.id }) else { return }
+        habits[i] = habits[i].logging(seconds: seconds, on: Date())
     }
 }

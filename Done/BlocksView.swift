@@ -29,7 +29,7 @@ struct BlocksView: View {
             }
             .sheet(isPresented: $addingHabit) { AddHabitView(store: store) }
             .fullScreenCover(item: $running) { habit in
-                SessionView(habit: habit) { store.complete(habit) }
+                SessionView(habit: habit) { store.log($0, for: habit) }
             }
         }
     }
@@ -40,7 +40,8 @@ private struct HabitCard: View {
     let onTap: () -> Void
 
     private var done: Bool { habit.isDone(on: Date()) }
-    private var minutes: Int { done ? habit.targetMinutes : 0 }
+    private var seconds: Int { habit.secondsLogged(on: Date()) }
+    private var minutes: Int { seconds / 60 }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -73,7 +74,7 @@ private struct HabitCard: View {
             }
             .disabled(done)
 
-            ProgressView(value: Double(minutes), total: Double(habit.targetMinutes))
+            ProgressView(value: Double(seconds), total: Double(habit.targetMinutes * 60))
                 .tint(.cyan)
         }
         .padding(16)
