@@ -1,4 +1,5 @@
 import ActivityKit
+import AlarmKit
 import Foundation
 
 /// The round, as the lock screen sees it. The end date is all the widget needs:
@@ -10,4 +11,11 @@ struct FocusAttributes: ActivityAttributes {
         var endsAt: Date
         var phase: String
     }
+}
+
+/// AlarmKit carries app data alongside its own alarm UI. We need none of it —
+/// the presentation says everything — but the type is required.
+@available(iOS 26.0, *)
+struct FocusMetadata: AlarmMetadata {
+    init() {}
 }

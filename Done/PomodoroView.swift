@@ -24,6 +24,8 @@ struct PomodoroView: View {
     @State private var now = Date()
     @State private var picking = false
     @State private var alarmOn = true
+    // iOS 26 rings a real alarm; older systems fall back to a notification.
+    private var hasRealAlarm: Bool { if #available(iOS 26.0, *) { true } else { false } }
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var phase: PomodoroPhase { PomodoroPhase(rawValue: phaseRaw) ?? .focus }
@@ -52,13 +54,13 @@ struct PomodoroView: View {
             }
             .familyActivityPicker(isPresented: $picking, selection: $blocks.focusAllowed)
             .onAppear { if paused == 0 && !isRunning { paused = minutes(for: phase) * 60 } }
-            .task { alarmOn = await FocusAlarm.isOn() }
+            .task { alarmOn = await alarmAllowed() }
             .onReceive(tick) { _ in
                 guard isRunning else { return }
                 now = Date()
-                if remaining == 0 { FocusAlarm.ring(); advance() }
+                if remaining == 0 { if !hasRealAlarm { FocusAlarm.ring() }; advance() }
             }
-            .onChange(of: scene) { if scene == .active { Task { alarmOn = await FocusAlarm.isOn() }; now = Date(); if isRunning && remaining == 0 { advance() } } }
+            .onChange(of: scene) { if scene == .active { Task { alarmOn = await alarmAllowed() }; now = Date(); if isRunning && remaining == 0 { advance() } } }
             .onChange(of: focusMinutes) { resetIfIdle() }
             .onChange(of: shortBreakMinutes) { resetIfIdle() }
             .onChange(of: longBreakMinutes) { resetIfIdle() }
@@ -185,7 +187,7 @@ struct PomodoroView: View {
         } else {
             Button {
                 Task {
-                    if await FocusAlarm.request() {
+                    if await requestAlarm() {
                         alarmOn = true
                     } else if let url = URL(string: UIApplication.openSettingsURLString) {
                         await UIApplication.shared.open(url)
@@ -193,13 +195,25 @@ struct PomodoroView: View {
                 }
             } label: {
                 HStack {
-                    Label("Alarm off — tap to allow notifications", systemImage: "bell.slash")
+                    Label(hasRealAlarm ? "Alarm off — tap to allow alarms"
+                                      : "Alarm off — tap to allow notifications",
+                          systemImage: "bell.slash")
                         .foregroundStyle(.orange)
                     Spacer()
                 }
                 .padding(12)
             }
         }
+    }
+
+    private func alarmAllowed() async -> Bool {
+        if #available(iOS 26.0, *) { return RealAlarm.isAuthorized }
+        return await FocusAlarm.isOn()
+    }
+
+    private func requestAlarm() async -> Bool {
+        if #available(iOS 26.0, *) { return await RealAlarm.request() }
+        return await FocusAlarm.request()
     }
 
     private func stepper(_ title: String, _ value: Binding<Int>, _ range: ClosedRange<Int>, step: Int) -> some View {
@@ -226,17 +240,22 @@ struct PomodoroView: View {
         now = Date()
         endsAt = now.timeIntervalSinceReferenceDate + Double(paused)
         let ends = now.addingTimeInterval(Double(paused))
-        FocusAlarm.arm(at: ends,
-                       saying: phase.isBreak ? "Break over — back to focus." : "Focus done — take a break.")
-        FocusLive.start(phase: phase.title, from: now, to: ends)
+        let body = phase.isBreak ? "Break over — back to focus." : "Focus done — take a break."
+        if #available(iOS 26.0, *) {
+            let seconds = Double(paused)
+            let title = phase.title
+            Task { await RealAlarm.start(seconds: seconds, phase: title, saying: body) }
+        } else {
+            FocusAlarm.arm(at: ends, saying: body)
+            FocusLive.start(phase: phase.title, from: now, to: ends)
+        }
         syncShields()
     }
 
     private func pause() {
         paused = remaining
         endsAt = 0
-        FocusAlarm.disarm()
-        FocusLive.end()
+        stopAlarm()
         syncShields()
     }
 
@@ -254,8 +273,7 @@ struct PomodoroView: View {
         phaseRaw = nextPhase(after: phase, completedFocuses: completedFocuses).rawValue
         paused = minutes(for: phase) * 60
         endsAt = 0
-        FocusAlarm.disarm()   // Skip mid-round: the old alarm must not still fire
-        FocusLive.end()
+        stopAlarm()   // Skip mid-round: the old alarm must not still fire
         syncShields()
     }
 
@@ -270,14 +288,19 @@ struct PomodoroView: View {
         phaseRaw = PomodoroPhase.focus.rawValue
         paused = focusMinutes * 60
         endsAt = 0
-        FocusAlarm.disarm()
-        FocusLive.end()
+        stopAlarm()
         syncShields()
     }
 
     private func resetIfIdle() {
         guard !isRunning else { return }
         paused = minutes(for: phase) * 60
+    }
+
+    private func stopAlarm() {
+        if #available(iOS 26.0, *) { RealAlarm.stop() }
+        FocusAlarm.disarm()
+        FocusLive.end()
     }
 
     private func syncShields() {

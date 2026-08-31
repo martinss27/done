@@ -17,6 +17,7 @@ targets:
         UILaunchScreen: {}
         CFBundleDisplayName: Done
         NSSupportsLiveActivities: true
+        NSAlarmKitUsageDescription: Rings when a focus round or a break ends.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.martinss27.done
@@ -54,8 +55,7 @@ targets:
     info:
       path: Report/Info.plist
       properties:
-        CFBundleDisplayName: Done
-        NSSupportsLiveActivities: true Report
+        CFBundleDisplayName: Done Report
         NSExtension:
           NSExtensionPointIdentifier: com.apple.deviceactivityui.report-extension
     settings:

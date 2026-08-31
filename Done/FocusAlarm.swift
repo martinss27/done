@@ -1,4 +1,5 @@
 import ActivityKit
+import AlarmKit
 import AudioToolbox
 import UserNotifications
 
@@ -73,5 +74,41 @@ enum FocusLive {
         for activity in Activity<FocusAttributes>.activities {
             Task { await activity.end(nil, dismissalPolicy: .immediate) }
         }
+    }
+}
+
+/// The real thing, iOS 26 and up: a system alarm that rings through silent mode
+/// and Do Not Disturb, with Apple's own alerting screen and its own countdown on
+/// the lock screen. Everything above stays as the fallback for iOS 17–25.
+@available(iOS 26.0, *)
+enum RealAlarm {
+    /// One alarm at a time, so a fixed id is enough to cancel or replace it.
+    private static let id = UUID(uuidString: "3E9F0A2C-1D4B-4F87-9C0E-7A5D2B6E8F10")!
+
+    static var isAuthorized: Bool { AlarmManager.shared.authorizationState == .authorized }
+
+    @discardableResult
+    static func request() async -> Bool {
+        ((try? await AlarmManager.shared.requestAuthorization()) ?? .denied) == .authorized
+    }
+
+    static func start(seconds: TimeInterval, phase: String, saying body: String) async {
+        stop()
+        let attributes = AlarmAttributes<FocusMetadata>(
+            presentation: AlarmPresentation(
+                alert: .init(title: LocalizedStringResource(stringLiteral: body),
+                             stopButton: AlarmButton(text: "Stop",
+                                                     textColor: .black,
+                                                     systemImageName: "stop.fill")),
+                countdown: .init(title: LocalizedStringResource(stringLiteral: phase))),
+            metadata: FocusMetadata(),
+            tintColor: .white)
+        _ = try? await AlarmManager.shared.schedule(
+            id: id,
+            configuration: .timer(duration: seconds, attributes: attributes, sound: .default))
+    }
+
+    static func stop() {
+        try? AlarmManager.shared.cancel(id: id)
     }
 }
