@@ -15,6 +15,11 @@ struct BlocksView: View {
                     } else {
                         ForEach($store.habits) { $habit in
                             HabitCard(habit: $habit) { running = habit }
+                                .contextMenu {
+                                    Button("Delete", systemImage: "trash", role: .destructive) {
+                                        store.habits.removeAll { $0.id == habit.id }
+                                    }
+                                }
                         }
                     }
                 }
