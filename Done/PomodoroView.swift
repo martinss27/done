@@ -74,8 +74,12 @@ struct PomodoroView: View {
 
     private var controls: some View {
         HStack(spacing: 12) {
-            Button(isRunning ? "Pause" : "Start") { isRunning ? pause() : start() }
-                .buttonStyle(.borderedProminent)
+            // Black label: the prominent button is filled with the phase tint,
+            // and white on white was invisible.
+            Button { isRunning ? pause() : start() } label: {
+                Text(isRunning ? "Pause" : "Start").foregroundStyle(.black)
+            }
+            .buttonStyle(.borderedProminent)
             Button("Skip") { advance() }
                 .buttonStyle(.bordered)
         }
