@@ -4,8 +4,8 @@ import FamilyControls
 struct BlocksView: View {
     @Bindable var store: HabitStore
     @Bindable var blocks: BlockController
-    @State private var addingHabit = false
-    @State private var pickingFor: Habit?
+    @State private var addingBlock = false
+    @State private var editing: Habit?
     @State private var running: Habit?
 
     var body: some View {
@@ -19,8 +19,9 @@ struct BlocksView: View {
                         ForEach(store.habits) { habit in
                             HabitCard(habit: binding(for: habit),
                                       appCount: blocks.appCount(for: habit.id),
+                                      unlocked: habit.isUnlocked(on: Date(), gate: blocks.gate),
                                       onStart: { running = habit },
-                                      onPickApps: { pickingFor = habit })
+                                      onEdit: { editing = habit })
                                 .contextMenu {
                                     Button("Delete", systemImage: "trash", role: .destructive) {
                                         store.habits.removeAll { $0.id == habit.id }
@@ -31,13 +32,8 @@ struct BlocksView: View {
                 }
                 .padding(16)
             }
-            .sheet(isPresented: $addingHabit) { AddHabitView(store: store) }
-            .familyActivityPicker(
-                isPresented: Binding(get: { pickingFor != nil },
-                                     set: { if !$0 { pickingFor = nil } }),
-                selection: Binding(
-                    get: { pickingFor.map { blocks.selection(for: $0.id) } ?? .init() },
-                    set: { if let h = pickingFor { blocks.selections[h.id] = $0 } }))
+            .sheet(isPresented: $addingBlock) { EditBlockView(store: store, blocks: blocks) }
+            .sheet(item: $editing) { EditBlockView(store: store, blocks: blocks, editing: $0) }
             .fullScreenCover(item: $running) { habit in
                 SessionView(habit: habit) { store.log($0, for: habit) }
             }
@@ -66,7 +62,7 @@ struct BlocksView: View {
                 .font(.system(.title, design: .monospaced).weight(.bold))
             Spacer()
             if !store.habits.isEmpty {
-                Button { addingHabit = true } label: {
+                Button { addingBlock = true } label: {
                     Image(systemName: "plus")
                         .font(.title3.weight(.semibold))
                         .frame(width: 44, height: 44)
@@ -79,7 +75,7 @@ struct BlocksView: View {
 
     private var emptyState: some View {
         VStack(spacing: 20) {
-            Button { addingHabit = true } label: {
+            Button { addingBlock = true } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 44, weight: .medium))
                     .frame(width: 130, height: 130)
@@ -98,8 +94,9 @@ struct BlocksView: View {
 private struct HabitCard: View {
     @Binding var habit: Habit
     let appCount: Int
+    let unlocked: Bool
     let onStart: () -> Void
-    let onPickApps: () -> Void
+    let onEdit: () -> Void
 
     private var done: Bool { habit.isDone(on: Date()) }
     private var seconds: Int { habit.secondsLogged(on: Date()) }
@@ -108,9 +105,9 @@ private struct HabitCard: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
-                Button(action: onPickApps) {
+                Button(action: onEdit) {
                     VStack(spacing: 2) {
-                        Image(systemName: done ? "lock.open.fill" : "lock.fill")
+                        Image(systemName: unlocked ? "lock.open.fill" : "lock.fill")
                             .font(.title2)
                         Text(appCount == 0 ? "pick" : "\(appCount)")
                             .font(.caption2).foregroundStyle(.secondary)
@@ -123,8 +120,8 @@ private struct HabitCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(habit.name).font(.title3.weight(.semibold))
                     HStack(spacing: 6) {
-                        chip("CONDITION")
-                        chip("DAILY")
+                        ForEach(habit.conditions) { chip($0.detail.uppercased()) }
+                        chip(habit.days.count == 7 ? "DAILY" : "CUSTOM")
                         if habit.streak > 0 { chip("\(habit.streak)🔥") }
                     }
                 }
@@ -134,19 +131,21 @@ private struct HabitCard: View {
                     .tint(.green)   // app tint is white; without this the knob vanishes into the track
             }
 
-            Button(action: onStart) {
-                HStack(spacing: 10) {
-                    Image(systemName: "timer").foregroundStyle(.cyan)
-                    Text(habit.name).foregroundStyle(.primary)
-                    Spacer()
-                    Text("\(minutes) / \(habit.targetMinutes) min")
-                        .font(.subheadline).foregroundStyle(.secondary)
+            if habit.timerMinutes != nil {
+                Button(action: onStart) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "timer").foregroundStyle(.cyan)
+                        Text(habit.name).foregroundStyle(.primary)
+                        Spacer()
+                        Text("\(minutes) / \(habit.targetMinutes) min")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }
                 }
-            }
-            .disabled(done)
+                .disabled(done)
 
-            ProgressView(value: Double(seconds), total: Double(habit.targetMinutes * 60))
-                .tint(.cyan)
+                ProgressView(value: Double(seconds), total: Double(habit.targetMinutes * 60))
+                    .tint(.cyan)
+            }
         }
         .padding(16)
         .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))

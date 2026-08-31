@@ -4,21 +4,31 @@ import FamilyControls
 import ManagedSettings
 import Observation
 
-/// Owns the Screen Time authorization and the shield state.
+/// Owns the Screen Time authorization and the app-side view of the shield.
 /// App choices are opaque tokens: we can shield them, never read their names.
+/// The state itself lives in the app group so the DeviceActivity extension
+/// works from the same picture — see `Shield`.
 @Observable
 final class BlockController {
     var status: AuthorizationStatus = AuthorizationCenter.shared.authorizationStatus
     var selections: [UUID: FamilyActivitySelection] = [:] { didSet { save() } }
+    /// Per block, the app you have to use to earn the unlock.
+    var unlockSelections: [UUID: FamilyActivitySelection] = [:] { didSet { saveUnlock() } }
 
     /// Apps that stay usable during a pomodoro focus round. Everything else is
     /// shielded while `isFocusing` — the inverse of the habit blocklist.
     var focusAllowed = FamilyActivitySelection() { didSet { saveAllowed() } }
     var isFocusing = false
 
-    private let managed = ManagedSettingsStore()
-    private let key = "blockSelections"
-    private let allowKey = "focusAllowed"
+    var gate = Gate.current
+
+    /// Last known Health readings, refreshed by the app on every foreground.
+    /// Kept here so `apply` has one shape for every caller — a pomodoro round
+    /// re-applying the shield must not zero them out.
+    var steps = 0
+    var workoutMinutes = 0
+    var mindfulMinutes = 0
+
     private var watch: AnyCancellable?
 
     var isAuthorized: Bool { status == .approved }
@@ -30,14 +40,18 @@ final class BlockController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in self?.status = $0 }
 
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decoded = try? JSONDecoder().decode([UUID: FamilyActivitySelection].self, from: data) {
-            selections = decoded
-        }
-        if let data = UserDefaults.standard.data(forKey: allowKey),
-           let decoded = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) {
-            focusAllowed = decoded
-        }
+        selections = Storage.load([UUID: FamilyActivitySelection].self, Storage.Key.selections)
+            ?? Self.legacy(Storage.Key.selections) ?? [:]
+        unlockSelections = Storage.load([UUID: FamilyActivitySelection].self,
+                                        Storage.Key.unlockSelections) ?? [:]
+        focusAllowed = Storage.load(FamilyActivitySelection.self, Storage.Key.focusAllowed)
+            ?? Self.legacy(Storage.Key.focusAllowed) ?? FamilyActivitySelection()
+    }
+
+    /// One-time lift of state written before the app group existed.
+    private static func legacy<T: Decodable>(_ key: String) -> T? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(T.self, from: data)
     }
 
     func requestAuthorization() async {
@@ -45,45 +59,35 @@ final class BlockController {
         status = AuthorizationCenter.shared.authorizationStatus
     }
 
-    func selection(for id: UUID) -> FamilyActivitySelection {
-        selections[id] ?? FamilyActivitySelection()
-    }
+    func selection(for id: UUID) -> FamilyActivitySelection { selections[id] ?? .init() }
+    func unlockSelection(for id: UUID) -> FamilyActivitySelection { unlockSelections[id] ?? .init() }
 
     func appCount(for id: UUID) -> Int {
         let s = selection(for: id)
         return s.applicationTokens.count + s.categoryTokens.count
     }
 
-    /// Shields every app tied to a habit that is switched on and not done today.
-    /// Finishing the habit drops it from the set, which unlocks its apps.
-    /// A focus round overrides all of that: shield everything except the
-    /// allowlist, so the one app you are focusing with is the only way out.
+    /// Recomputes which blocks their health conditions have satisfied, then
+    /// re-applies the shield and re-points the usage counters.
     func apply(_ habits: [Habit]) {
         guard isAuthorized else { return }
-        if isFocusing {
-            managed.shield.applications = nil
-            managed.shield.applicationCategories = .all(except: focusAllowed.applicationTokens)
-            return
-        }
-        let pending = habits.filter { $0.isEnabled && !$0.isDone(on: Date()) }
-        var apps: Set<ApplicationToken> = []
-        var categories: Set<ActivityCategoryToken> = []
-        for habit in pending {
-            let s = selection(for: habit.id)
-            apps.formUnion(s.applicationTokens)
-            categories.formUnion(s.categoryTokens)
-        }
-        managed.shield.applications = apps.isEmpty ? nil : apps
-        managed.shield.applicationCategories = categories.isEmpty ? nil : .specific(categories)
+        var gate = Gate.current
+        if gate.rollOverIfNeeded() { Diagnostics.log("new day: unlocks reset") }
+        gate.healthMet = Set(habits.filter {
+            $0.healthMet(steps: steps, workoutMinutes: workoutMinutes, mindfulMinutes: mindfulMinutes)
+        }.map(\.id))
+        // A block with no app-time condition has nothing to earn or spend.
+        let earners = Set(habits.filter { $0.appTimeMinutes != nil }.map(\.id))
+        gate.banked.formIntersection(earners)
+        gate.open.formIntersection(earners)
+        gate.store()
+        self.gate = gate
+
+        Shield.apply(focusAllow: isFocusing ? focusAllowed : nil)
+        if !isFocusing { Monitoring.armAll() }
     }
 
-    private func save() {
-        guard let data = try? JSONEncoder().encode(selections) else { return }
-        UserDefaults.standard.set(data, forKey: key)
-    }
-
-    private func saveAllowed() {
-        guard let data = try? JSONEncoder().encode(focusAllowed) else { return }
-        UserDefaults.standard.set(data, forKey: allowKey)
-    }
+    private func save() { Storage.save(selections, Storage.Key.selections) }
+    private func saveUnlock() { Storage.save(unlockSelections, Storage.Key.unlockSelections) }
+    private func saveAllowed() { Storage.save(focusAllowed, Storage.Key.focusAllowed) }
 }
