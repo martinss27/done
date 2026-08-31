@@ -5,8 +5,25 @@ struct Habit: Identifiable, Codable, Equatable {
     var id = UUID()
     var name: String
     var targetMinutes: Int
+    var isEnabled: Bool = true
     var streak: Int = 0
     var lastDone: Date? = nil
+
+    // Decode tolerantly so adding a field never wipes saved habits.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try c.decode(String.self, forKey: .name)
+        targetMinutes = try c.decodeIfPresent(Int.self, forKey: .targetMinutes) ?? 5
+        isEnabled = try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+        streak = try c.decodeIfPresent(Int.self, forKey: .streak) ?? 0
+        lastDone = try c.decodeIfPresent(Date.self, forKey: .lastDone)
+    }
+
+    init(name: String, targetMinutes: Int) {
+        self.name = name
+        self.targetMinutes = targetMinutes
+    }
 
     func isDone(on day: Date, calendar: Calendar = .current) -> Bool {
         guard let lastDone else { return false }

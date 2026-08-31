@@ -6,7 +6,7 @@ struct DoneApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HabitListView(store: store)
+            RootView(store: store)
         }
     }
 }
