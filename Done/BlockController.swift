@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import FamilyControls
 import ManagedSettings
 import Observation
@@ -12,10 +13,17 @@ final class BlockController {
 
     private let managed = ManagedSettingsStore()
     private let key = "blockSelections"
+    private var watch: AnyCancellable?
 
     var isAuthorized: Bool { status == .approved }
 
     init() {
+        // The center resolves its status asynchronously, so a one-shot read at
+        // launch reports .notDetermined even when access was already granted.
+        watch = AuthorizationCenter.shared.$authorizationStatus
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.status = $0 }
+
         if let data = UserDefaults.standard.data(forKey: key),
            let decoded = try? JSONDecoder().decode([UUID: FamilyActivitySelection].self, from: data) {
             selections = decoded

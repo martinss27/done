@@ -26,12 +26,8 @@ struct InsightsView: View {
         NavigationStack {
             Group {
                 if blocks.isAuthorized {
-                    ScrollView {
-                        DeviceActivityReport(.totalActivity, filter: filter)
-                            .frame(minHeight: 700)
-                            .padding(16)
-                            .blur(radius: hidden ? 18 : 0)
-                    }
+                    DeviceActivityReport(.totalActivity, filter: filter)
+                        .blur(radius: hidden ? 18 : 0)
                 } else {
                     ContentUnavailableView("Screen Time is off",
                         systemImage: "chart.bar.xaxis",

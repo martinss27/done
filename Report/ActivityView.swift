@@ -8,6 +8,14 @@ struct ActivityView: View {
     private var peak: Int { model.apps.first?.seconds ?? 1 }
 
     var body: some View {
+        // The report owns its scrolling: it lives in another process, so a
+        // ScrollView on the app side would fight this one.
+        ScrollView {
+            content.padding(16)
+        }
+    }
+
+    private var content: some View {
         VStack(spacing: 16) {
             summary
             if model.apps.isEmpty {
