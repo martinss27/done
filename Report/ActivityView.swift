@@ -7,6 +7,19 @@ struct ActivityView: View {
 
     private var peak: Int { model.apps.first?.seconds ?? 1 }
 
+    /// Absolute thresholds, so a colour means the same thing every day —
+    /// relative-to-peak shading made a quiet day look as bad as a heavy one.
+    private static let bands: [(minutes: Int, color: Color, label: String)] = [
+        (0, .green, "light"),
+        (30, .yellow, "30m+"),
+        (45, .orange, "45m+"),
+        (90, .red, "90m+"),
+    ]
+
+    private func band(_ seconds: Int) -> Color {
+        Self.bands.last { seconds / 60 >= $0.minutes }?.color ?? .green
+    }
+
     var body: some View {
         // The report owns its scrolling: it lives in another process, so a
         // ScrollView on the app side would fight this one.
@@ -29,8 +42,26 @@ struct ActivityView: View {
                 }
                 .padding(16)
                 .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+
+                legend
             }
         }
+    }
+
+    private var legend: some View {
+        HStack {
+            ForEach(Self.bands, id: \.label) { band in
+                HStack(spacing: 6) {
+                    Circle().fill(band.color).frame(width: 8, height: 8)
+                    Text(band.label)
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.vertical, 14)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
     }
 
     private var summary: some View {
@@ -67,11 +98,11 @@ struct ActivityView: View {
                     Text(app.name).font(.title3).lineLimit(1)
                     Spacer()
                     Text(short(app.seconds))
-                        .foregroundStyle(app.seconds >= peak / 2 ? .orange : .green)
+                        .foregroundStyle(band(app.seconds))
                         .monospacedDigit()
                 }
                 ProgressView(value: Double(app.seconds), total: Double(max(peak, 1)))
-                    .tint(app.seconds >= peak / 2 ? .orange : .green)
+                    .tint(band(app.seconds))
             }
         }
     }
