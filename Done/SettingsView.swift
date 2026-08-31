@@ -4,16 +4,16 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Bloqueio de apps") {
-                    // ponytail: precisa de Apple Developer Program + FamilyControls.
-                    Label("Em breve", systemImage: "lock.badge.clock")
+                Section("App blocking") {
+                    // ponytail: needs Apple Developer Program + FamilyControls.
+                    Label("Coming soon", systemImage: "lock.badge.clock")
                         .foregroundStyle(.secondary)
                 }
                 Section {
-                    LabeledContent("Versão", value: "0.1")
+                    LabeledContent("Version", value: "0.1")
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("settings")
         }
     }
 }

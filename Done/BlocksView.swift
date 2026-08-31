@@ -9,29 +9,60 @@ struct BlocksView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
-                    ForEach($store.habits) { $habit in
-                        HabitCard(habit: $habit) { running = habit }
-                    }
+                    header
                     if store.habits.isEmpty {
-                        ContentUnavailableView("Nenhum hábito",
-                            systemImage: "shield",
-                            description: Text("Toque em + para criar o primeiro."))
-                            .padding(.top, 80)
+                        emptyState
+                    } else {
+                        ForEach($store.habits) { $habit in
+                            HabitCard(habit: $habit) { running = habit }
+                        }
                     }
                 }
                 .padding(16)
-            }
-            .navigationTitle("✏️ habits first")
-            .toolbar {
-                Button { addingHabit = true } label: {
-                    Image(systemName: "plus").font(.headline)
-                }
             }
             .sheet(isPresented: $addingHabit) { AddHabitView(store: store) }
             .fullScreenCover(item: $running) { habit in
                 SessionView(habit: habit) { store.log($0, for: habit) }
             }
         }
+    }
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            Image("IconMark")
+                .resizable()
+                .frame(width: 34, height: 34)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Text("habits first")
+                .font(.system(.title, design: .monospaced).weight(.bold))
+            Spacer()
+            if !store.habits.isEmpty {
+                Button { addingHabit = true } label: {
+                    Image(systemName: "plus")
+                        .font(.title3.weight(.semibold))
+                        .frame(width: 44, height: 44)
+                        .background(.white.opacity(0.08), in: Circle())
+                }
+            }
+        }
+        .padding(.bottom, 12)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 20) {
+            Button { addingHabit = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 44, weight: .medium))
+                    .frame(width: 130, height: 130)
+                    .background(.white.opacity(0.06), in: Circle())
+                    .overlay(Circle().stroke(.white.opacity(0.08), lineWidth: 1))
+            }
+            Text("create your first habit!")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        }
+        .foregroundStyle(.white)
+        .padding(.top, 120)
     }
 }
 

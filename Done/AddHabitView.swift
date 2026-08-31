@@ -9,17 +9,17 @@ struct AddHabitView: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Ler um livro", text: $name)
-                Stepper("\(minutes) min por dia", value: $minutes, in: 1...120)
+                TextField("Read a book", text: $name)
+                Stepper("\(minutes) min per day", value: $minutes, in: 1...120)
             }
-            .navigationTitle("Novo hábito")
+            .navigationTitle("New habit")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Salvar") {
+                    Button("Save") {
                         store.habits.append(Habit(name: name, targetMinutes: minutes))
                         dismiss()
                     }

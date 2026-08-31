@@ -22,10 +22,10 @@ struct SessionView: View {
                 .contentTransition(.numericText())
 
             if remaining == 0 {
-                Text("feito 🔥").font(.headline).foregroundStyle(.green)
-                Button("Fechar") { dismiss() }.buttonStyle(.borderedProminent)
+                Text("done 🔥").font(.headline).foregroundStyle(.green)
+                Button("Close") { dismiss() }.buttonStyle(.borderedProminent)
             } else {
-                Button("Pausar") { dismiss() }.foregroundStyle(.secondary)
+                Button("Pause") { dismiss() }.foregroundStyle(.secondary)
             }
         }
         .onAppear {

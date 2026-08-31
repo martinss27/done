@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// ponytail: dados de exemplo. Trocar por um DeviceActivityReport quando o
-/// entitlement `com.apple.developer.family-controls` existir — o layout já
-/// é o mesmo que a extensão vai preencher.
+/// ponytail: sample data. Swap for a DeviceActivityReport once the
+/// `com.apple.developer.family-controls` entitlement exists — this layout is
+/// already the one the extension will fill.
 struct AppUsage: Identifiable {
     let id = UUID()
     let name: String
@@ -28,7 +28,7 @@ struct InsightsView: View {
                 VStack(spacing: 16) {
                     summary
                     appList
-                    Text("dados de exemplo — screen time real exige o entitlement da Apple")
+                    Text("sample data — real screen time needs Apple's entitlement")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
