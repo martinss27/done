@@ -1,8 +1,11 @@
 import SwiftUI
+import FamilyControls
 
 struct BlocksView: View {
     @Bindable var store: HabitStore
+    @Bindable var blocks: BlockController
     @State private var addingHabit = false
+    @State private var pickingFor: Habit?
     @State private var running: Habit?
 
     var body: some View {
@@ -14,7 +17,10 @@ struct BlocksView: View {
                         emptyState
                     } else {
                         ForEach(store.habits) { habit in
-                            HabitCard(habit: binding(for: habit)) { running = habit }
+                            HabitCard(habit: binding(for: habit),
+                                      appCount: blocks.appCount(for: habit.id),
+                                      onStart: { running = habit },
+                                      onPickApps: { pickingFor = habit })
                                 .contextMenu {
                                     Button("Delete", systemImage: "trash", role: .destructive) {
                                         store.habits.removeAll { $0.id == habit.id }
@@ -26,6 +32,12 @@ struct BlocksView: View {
                 .padding(16)
             }
             .sheet(isPresented: $addingHabit) { AddHabitView(store: store) }
+            .familyActivityPicker(
+                isPresented: Binding(get: { pickingFor != nil },
+                                     set: { if !$0 { pickingFor = nil } }),
+                selection: Binding(
+                    get: { pickingFor.map { blocks.selection(for: $0.id) } ?? .init() },
+                    set: { if let h = pickingFor { blocks.selections[h.id] = $0 } }))
             .fullScreenCover(item: $running) { habit in
                 SessionView(habit: habit) { store.log($0, for: habit) }
             }
@@ -85,7 +97,9 @@ struct BlocksView: View {
 
 private struct HabitCard: View {
     @Binding var habit: Habit
-    let onTap: () -> Void
+    let appCount: Int
+    let onStart: () -> Void
+    let onPickApps: () -> Void
 
     private var done: Bool { habit.isDone(on: Date()) }
     private var seconds: Int { habit.secondsLogged(on: Date()) }
@@ -94,10 +108,17 @@ private struct HabitCard: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
-                Image(systemName: done ? "lock.open.fill" : "lock.fill")
-                    .font(.title2)
+                Button(action: onPickApps) {
+                    VStack(spacing: 2) {
+                        Image(systemName: done ? "lock.open.fill" : "lock.fill")
+                            .font(.title2)
+                        Text(appCount == 0 ? "pick" : "\(appCount)")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
                     .frame(width: 56, height: 56)
                     .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(habit.name).font(.title3.weight(.semibold))
@@ -113,7 +134,7 @@ private struct HabitCard: View {
                     .tint(.green)   // app tint is white; without this the knob vanishes into the track
             }
 
-            Button(action: onTap) {
+            Button(action: onStart) {
                 HStack(spacing: 10) {
                     Image(systemName: "timer").foregroundStyle(.cyan)
                     Text(habit.name).foregroundStyle(.primary)
