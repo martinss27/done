@@ -9,6 +9,8 @@ struct RootView: View {
         TabView {
             BlocksView(store: store, blocks: blocks)
                 .tabItem { Label("Blocks", systemImage: "shield.fill") }
+            PomodoroView(store: store, blocks: blocks)
+                .tabItem { Label { Text("Focus") } icon: { tomatoSymbol } }
             InsightsView(blocks: blocks)
                 .tabItem { Label("Insights", systemImage: "chart.bar.fill") }
             SettingsView(blocks: blocks)
