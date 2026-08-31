@@ -54,7 +54,7 @@ struct PomodoroView: View {
             .onReceive(tick) { _ in
                 guard isRunning else { return }
                 now = Date()
-                if remaining == 0 { advance() }
+                if remaining == 0 { FocusAlarm.ring(); advance() }
             }
             .onChange(of: scene) { if scene == .active { now = Date(); if isRunning && remaining == 0 { advance() } } }
             .onChange(of: focusMinutes) { resetIfIdle() }
@@ -192,12 +192,15 @@ struct PomodoroView: View {
         if paused == 0 { paused = minutes(for: phase) * 60 }
         now = Date()
         endsAt = now.timeIntervalSinceReferenceDate + Double(paused)
+        FocusAlarm.arm(at: now.addingTimeInterval(Double(paused)),
+                       saying: phase.isBreak ? "Break over — back to focus." : "Focus done — take a break.")
         syncShields()
     }
 
     private func pause() {
         paused = remaining
         endsAt = 0
+        FocusAlarm.disarm()
         syncShields()
     }
 
@@ -215,6 +218,7 @@ struct PomodoroView: View {
         phaseRaw = nextPhase(after: phase, completedFocuses: completedFocuses).rawValue
         paused = minutes(for: phase) * 60
         endsAt = 0
+        FocusAlarm.disarm()   // Skip mid-round: the old alarm must not still fire
         syncShields()
     }
 
@@ -229,6 +233,7 @@ struct PomodoroView: View {
         phaseRaw = PomodoroPhase.focus.rawValue
         paused = focusMinutes * 60
         endsAt = 0
+        FocusAlarm.disarm()
         syncShields()
     }
 
