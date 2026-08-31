@@ -8,6 +8,9 @@ targets:
     type: application
     platform: iOS
     sources: [Done, Shared]
+    scheme:
+      testTargets:
+        - DoneTests
     dependencies:
       - target: DoneReport
       - target: DoneWidget
@@ -53,6 +56,18 @@ targets:
         ENABLE_DEBUG_DYLIB: NO
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
+
+  DoneTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: Done
+    settings:
+      base:
+        DEVELOPMENT_TEAM: R37QVQP98Y
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
 
   DoneMonitor:
     type: app-extension

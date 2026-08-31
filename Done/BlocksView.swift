@@ -18,7 +18,7 @@ struct BlocksView: View {
                     } else {
                         ForEach(store.habits) { habit in
                             HabitCard(habit: binding(for: habit),
-                                      appCount: blocks.appCount(for: habit.id),
+                                      apps: blocks.selection(for: habit.id),
                                       unlocked: habit.isUnlocked(on: Date(), gate: blocks.gate),
                                       onStart: { running = habit },
                                       onEdit: { editing = habit })
@@ -58,7 +58,7 @@ struct BlocksView: View {
                 .resizable()
                 .frame(width: 34, height: 34)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-            Text("habits first")
+            Text("it's done?")
                 .font(.system(.title, design: .monospaced).weight(.bold))
             Spacer()
             if !store.habits.isEmpty {
@@ -93,7 +93,7 @@ struct BlocksView: View {
 
 private struct HabitCard: View {
     @Binding var habit: Habit
-    let appCount: Int
+    let apps: FamilyActivitySelection
     let unlocked: Bool
     let onStart: () -> Void
     let onEdit: () -> Void
@@ -105,30 +105,31 @@ private struct HabitCard: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
-                Button(action: onEdit) {
-                    VStack(spacing: 2) {
-                        Image(systemName: unlocked ? "lock.open.fill" : "lock.fill")
-                            .font(.title2)
-                        Text(appCount == 0 ? "pick" : "\(appCount)")
-                            .font(.caption2).foregroundStyle(.secondary)
-                    }
-                    .frame(width: 56, height: 56)
-                    .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
-                }
-                .buttonStyle(.plain)
+                Button(action: onEdit) { appIcons }
+                    .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(habit.name).font(.title3.weight(.semibold))
                     HStack(spacing: 6) {
-                        ForEach(habit.conditions) { chip($0.detail.uppercased()) }
+                        chip("CONDITION")
                         chip(habit.days.count == 7 ? "DAILY" : "CUSTOM")
                         if habit.streak > 0 { chip("\(habit.streak)🔥") }
                     }
+                    if !habit.cardDetail.isEmpty {
+                        Text(habit.cardDetail).font(.subheadline).foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
-                Toggle("", isOn: $habit.isEnabled)
-                    .labelsHidden()
-                    .tint(.green)   // app tint is white; without this the knob vanishes into the track
+                VStack(alignment: .trailing, spacing: 10) {
+                    Toggle("", isOn: $habit.isEnabled)
+                        .labelsHidden()
+                        .tint(.green)   // app tint is white; without this the knob vanishes into the track
+                    Image(systemName: unlocked ? "lock.open.fill" : "lock.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 34, height: 34)
+                        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+                }
             }
 
             if habit.timerMinutes != nil {
@@ -150,6 +151,37 @@ private struct HabitCard: View {
         .padding(16)
         .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
         .opacity(habit.isEnabled ? 1 : 0.4)
+    }
+
+    /// The apps this block covers, overlapping like a stack of cards. Tokens are
+    /// opaque, so `Label` is the only way to draw an app we are not allowed to name.
+    private var appIcons: some View {
+        let tokens = Array(apps.applicationTokens.prefix(3))
+        let extra = apps.applicationTokens.count - tokens.count + apps.categoryTokens.count
+        return ZStack {
+            if tokens.isEmpty {
+                Image(systemName: "plus")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            } else {
+                HStack(spacing: -10) {
+                    ForEach(Array(tokens.enumerated()), id: \.offset) { _, token in
+                        Label(token)
+                            .labelStyle(.iconOnly)
+                            .scaleEffect(0.8)
+                            .frame(width: 28, height: 28)
+                    }
+                    if extra > 0 {
+                        Text("+\(extra)")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, 12)
+                    }
+                }
+            }
+        }
+        .frame(width: 60, height: 60)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func chip(_ text: String) -> some View {

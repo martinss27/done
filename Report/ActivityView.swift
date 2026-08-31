@@ -2,10 +2,30 @@ import FamilyControls
 import ManagedSettings
 import SwiftUI
 
+/// What the list is ranked by. Time answers "where did the day go"; pickups
+/// answers "what keeps pulling me back", which is a different app more often
+/// than not.
+enum Rank: String, CaseIterable {
+    case time, pickups
+}
+
 struct ActivityView: View {
     let model: ActivityModel
+    @State private var rank: Rank = .time
 
-    private var peak: Int { model.apps.first?.seconds ?? 1 }
+    private var apps: [AppRow] {
+        switch rank {
+        case .time: model.apps.sorted { $0.seconds > $1.seconds }
+        case .pickups: model.apps.sorted { $0.pickups > $1.pickups }
+        }
+    }
+
+    private var peak: Int {
+        switch rank {
+        case .time: max(apps.first?.seconds ?? 1, 1)
+        case .pickups: max(apps.first?.pickups ?? 1, 1)
+        }
+    }
 
     /// Absolute thresholds, so a colour means the same thing every day —
     /// relative-to-peak shading made a quiet day look as bad as a heavy one.
@@ -16,8 +36,20 @@ struct ActivityView: View {
         (90, .red, "90m+"),
     ]
 
-    private func band(_ seconds: Int) -> Color {
-        Self.bands.last { seconds / 60 >= $0.minutes }?.color ?? .green
+    /// Pickup bands are about frequency, not duration, so they get their own
+    /// thresholds rather than borrowing the minute ones.
+    private static let pickupBands: [(count: Int, color: Color, label: String)] = [
+        (0, .green, "few"),
+        (10, .yellow, "10+"),
+        (25, .orange, "25+"),
+        (50, .red, "50+"),
+    ]
+
+    private func band(_ app: AppRow) -> Color {
+        switch rank {
+        case .time: Self.bands.last { app.seconds / 60 >= $0.minutes }?.color ?? .green
+        case .pickups: Self.pickupBands.last { app.pickups >= $0.count }?.color ?? .green
+        }
     }
 
     var body: some View {
@@ -37,8 +69,13 @@ struct ActivityView: View {
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 40)
             } else {
+                Picker("", selection: $rank) {
+                    ForEach(Rank.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+
                 VStack(spacing: 18) {
-                    ForEach(model.apps) { row($0) }
+                    ForEach(apps) { row($0) }
                 }
                 .padding(16)
                 .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
@@ -49,8 +86,11 @@ struct ActivityView: View {
     }
 
     private var legend: some View {
-        HStack {
-            ForEach(Self.bands, id: \.label) { band in
+        let labels: [(color: Color, label: String)] = rank == .time
+            ? Self.bands.map { ($0.color, $0.label) }
+            : Self.pickupBands.map { ($0.color, $0.label) }
+        return HStack {
+            ForEach(labels, id: \.label) { band in
                 HStack(spacing: 6) {
                     Circle().fill(band.color).frame(width: 8, height: 8)
                     Text(band.label)
@@ -66,7 +106,7 @@ struct ActivityView: View {
 
     private var summary: some View {
         VStack(spacing: 4) {
-            Text(long(model.totalSeconds))
+            Text(model.totalSeconds.duration)
                 .font(.system(size: 38, weight: .bold, design: .rounded))
                 .foregroundStyle(.green)
             HStack(spacing: 24) {
@@ -97,23 +137,20 @@ struct ActivityView: View {
                 HStack {
                     Text(app.name).font(.title3).lineLimit(1)
                     Spacer()
-                    Text(short(app.seconds))
-                        .foregroundStyle(band(app.seconds))
+                    Text(rank == .time ? app.seconds.duration : "\(app.pickups)×")
+                        .foregroundStyle(band(app))
                         .monospacedDigit()
                 }
-                ProgressView(value: Double(app.seconds), total: Double(max(peak, 1)))
-                    .tint(band(app.seconds))
+                ProgressView(value: Double(rank == .time ? app.seconds : app.pickups),
+                             total: Double(peak))
+                    .tint(band(app))
+                if rank == .pickups {
+                    Text("\(app.pickups) pickups · \(app.seconds.duration) · \(app.secondsPerPickup.duration) each")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
 
-    private func short(_ seconds: Int) -> String {
-        let m = seconds / 60
-        return m < 60 ? "\(m)m" : "\(m / 60)h \(m % 60)m"
-    }
-
-    private func long(_ seconds: Int) -> String {
-        let m = seconds / 60
-        return m < 60 ? "\(m)m" : "\(m / 60)h \(m % 60)m"
-    }
 }

@@ -4,12 +4,7 @@ import SwiftUI
 struct DoneApp: App {
     @State private var store = HabitStore()
 
-    init() {
-        FocusAlarm.install()
-        #if DEBUG
-        Habit.selfCheck()
-        #endif
-    }
+    init() { FocusAlarm.install() }
 
     var body: some Scene {
         WindowGroup {

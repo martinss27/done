@@ -143,43 +143,14 @@ final class HabitStore {
     }
 }
 
-#if DEBUG
 extension Habit {
-    /// One runnable check for the unlock rules, called from DoneApp.init.
-    static func selfCheck() {
-        let day = Date()
-        let weekday = Calendar.current.component(.weekday, from: day)
-        var gate = Gate()
-
-        var h = Habit(name: "t", conditions: [])
-        assert(h.isUnlocked(on: day, gate: gate), "no conditions must never lock")
-
-        h.conditions = [.steps(count: 10_000)]
-        assert(!h.isUnlocked(on: day, gate: gate), "an unmet health condition locks")
-        assert(!h.healthMet(steps: 9_999, workoutMinutes: 0, mindfulMinutes: 0), "under target")
-        assert(h.healthMet(steps: 10_000, workoutMinutes: 0, mindfulMinutes: 0), "at target")
-        gate.healthMet.insert(h.id)
-        assert(h.isUnlocked(on: day, gate: gate), "meeting it unlocks")
-
-        h.conditions = [.appTime(minutes: 5)]
-        assert(!h.isUnlocked(on: day, gate: gate), "app time is not satisfied by health")
-        gate.banked.insert(h.id)
-        assert(!h.isUnlocked(on: day, gate: gate), "a banked unlock is not a spent one")
-        gate.banked.remove(h.id)
-        gate.open.insert(h.id)
-        assert(h.isUnlocked(on: day, gate: gate), "spending the unlock opens the apps")
-
-        h.conditions = [.steps(count: 10), .appTime(minutes: 5)]
-        gate.healthMet.remove(h.id)
-        assert(!h.isUnlocked(on: day, gate: gate), "every condition must be met, not just one")
-
-        h.days = Set((1...7).filter { $0 != weekday })
-        assert(h.isUnlocked(on: day, gate: gate), "a day the block does not run on is unlocked")
+    /// The line under the chips on a block card: what it asks and what it pays.
+    var cardDetail: String {
+        var parts = conditions.map(\.detail)
+        if let spend = blockAgainMinutes { parts.append("\(spend) min per unlock") }
+        return parts.joined(separator: " · ")
     }
-}
-#endif
 
-extension Habit {
     /// One sentence for the shield: what this block wants before it opens.
     var shieldSubtitle: String {
         let asks = conditions.map { condition -> String in

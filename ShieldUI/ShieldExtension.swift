@@ -47,6 +47,15 @@ final class ShieldExtension: ShieldConfigurationDataSource {
 
     private func make(appName: String?, habit: Habit?) -> ShieldConfiguration {
         let name = appName ?? "this app"
+        // A focus round closes far more than one block's apps, so naming a
+        // habit here would explain the wrong thing.
+        if let focus = FocusSession.current {
+            let left = focus.minutesLeft
+            return shield(
+                title: "Finish your focus round first!",
+                subtitle: left <= 1 ? "Less than a minute left."
+                                    : "\(left) min left. \(name) opens when the round ends.")
+        }
         // A banked unlock changes the ask into an offer, and adds the button
         // that spends it — handled by the shield action extension.
         let banked = habit.map { Gate.current.banked.contains($0.id) } ?? false
@@ -58,21 +67,26 @@ final class ShieldExtension: ShieldConfigurationDataSource {
         } else {
             subtitle = habit?.shieldSubtitle ?? "Open Done to earn your unlock."
         }
-        return ShieldConfiguration(
+        return shield(title: "To unlock \(name),\nfinish your habits first!",
+                      subtitle: subtitle,
+                      spendLabel: banked ? "Use 1 unlock" : nil)
+    }
+
+    private func shield(title: String, subtitle: String,
+                        spendLabel: String? = nil) -> ShieldConfiguration {
+        ShieldConfiguration(
             backgroundBlurStyle: .systemUltraThinMaterialDark,
             // ponytail: alpha is the dial here — 1 hides the app behind
             // completely, lower lets more of it through.
             backgroundColor: UIColor(white: 0.13, alpha: 0.7),
             icon: Self.logo,
-            title: ShieldConfiguration.Label(
-                text: "To unlock \(name),\nfinish your habits first!",
-                color: .white),
+            title: ShieldConfiguration.Label(text: title, color: .white),
             subtitle: ShieldConfiguration.Label(text: subtitle,
                                                 color: UIColor(white: 0.7, alpha: 1)),
             primaryButtonLabel: ShieldConfiguration.Label(text: "Close", color: .black),
             primaryButtonBackgroundColor: .white,
-            secondaryButtonLabel: banked
-                ? ShieldConfiguration.Label(text: "Use 1 unlock", color: .systemGreen)
-                : nil)
+            secondaryButtonLabel: spendLabel.map {
+                ShieldConfiguration.Label(text: $0, color: .systemGreen)
+            })
     }
 }

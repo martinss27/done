@@ -28,3 +28,26 @@ struct Gate: Codable, Equatable {
     static var current: Gate { Storage.load(Gate.self, Storage.Key.gate) ?? Gate() }
     func store() { Storage.save(self, Storage.Key.gate) }
 }
+
+/// A pomodoro round in progress. Stored so the shield can say "finish your
+/// round" instead of naming a habit that has nothing to do with why the app
+/// is closed right now.
+struct FocusSession: Codable, Equatable {
+    var endsAt: Date
+
+    var minutesLeft: Int {
+        max(Int((endsAt.timeIntervalSinceNow / 60).rounded(.up)), 0)
+    }
+
+    /// nil once the round is over, so a stale entry cannot keep the copy wrong.
+    static var current: FocusSession? {
+        guard let session = Storage.load(FocusSession.self, Storage.Key.focus),
+              session.endsAt > Date() else { return nil }
+        return session
+    }
+
+    static func store(_ session: FocusSession?) {
+        if let session { Storage.save(session, Storage.Key.focus) }
+        else { Storage.defaults.removeObject(forKey: Storage.Key.focus) }
+    }
+}

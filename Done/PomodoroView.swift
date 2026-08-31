@@ -305,6 +305,8 @@ struct PomodoroView: View {
 
     private func syncShields() {
         blocks.isFocusing = isRunning && phase == .focus
+        blocks.focusEndsAt = blocks.isFocusing
+            ? Date(timeIntervalSinceReferenceDate: endsAt) : nil
         blocks.apply(store.habits)
     }
 }

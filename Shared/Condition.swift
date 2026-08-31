@@ -101,3 +101,18 @@ extension Int {
         }
     }
 }
+
+extension Int {
+    /// A span of seconds as the two largest units that carry information:
+    /// 45s, 3m 20s, 1h 5m. Whole units drop the smaller half, and a short
+    /// visit never collapses into a misleading "0m".
+    var duration: String {
+        if self < 60 { return "\(self)s" }
+        if self < 3600 {
+            let seconds = self % 60
+            return seconds == 0 ? "\(self / 60)m" : "\(self / 60)m \(seconds)s"
+        }
+        let minutes = (self % 3600) / 60
+        return minutes == 0 ? "\(self / 3600)h" : "\(self / 3600)h \(minutes)m"
+    }
+}

@@ -19,6 +19,8 @@ final class BlockController {
     /// shielded while `isFocusing` — the inverse of the habit blocklist.
     var focusAllowed = FamilyActivitySelection() { didSet { saveAllowed() } }
     var isFocusing = false
+    /// When the running focus round ends, shared so the shield can count it down.
+    var focusEndsAt: Date?
 
     var gate = Gate.current
 
@@ -83,6 +85,7 @@ final class BlockController {
         gate.store()
         self.gate = gate
 
+        FocusSession.store(isFocusing ? focusEndsAt.map(FocusSession.init) : nil)
         Shield.apply(focusAllow: isFocusing ? focusAllowed : nil)
         if !isFocusing { Monitoring.armAll() }
     }
