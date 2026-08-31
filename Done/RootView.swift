@@ -9,7 +9,7 @@ struct RootView: View {
         TabView {
             BlocksView(store: store, blocks: blocks)
                 .tabItem { Label("Blocks", systemImage: "shield.fill") }
-            InsightsView()
+            InsightsView(blocks: blocks)
                 .tabItem { Label("Insights", systemImage: "chart.bar.fill") }
             SettingsView(blocks: blocks)
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }

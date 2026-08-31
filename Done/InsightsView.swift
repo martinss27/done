@@ -1,39 +1,42 @@
+import DeviceActivity
 import SwiftUI
-
-/// ponytail: sample data. Swap for a DeviceActivityReport once the
-/// `com.apple.developer.family-controls` entitlement exists — this layout is
-/// already the one the extension will fill.
-struct AppUsage: Identifiable {
-    let id = UUID()
-    let name: String
-    let minutes: Int
-    let tint: Color
-}
 
 enum Period: String, CaseIterable {
     case today = "Today", week = "Week"
+
+    var interval: DateInterval {
+        let cal = Calendar.current
+        let now = Date()
+        switch self {
+        case .today:
+            return DateInterval(start: cal.startOfDay(for: now), end: now)
+        case .week:
+            let start = cal.date(byAdding: .day, value: -6, to: cal.startOfDay(for: now))!
+            return DateInterval(start: start, end: now)
+        }
+    }
 }
 
 struct InsightsView: View {
+    @Bindable var blocks: BlockController
     @State private var period: Period = .today
     @State private var hidden = false
 
-    private var usage: [AppUsage] { Self.sample(period) }
-    private var total: Int { usage.reduce(0) { $0 + $1.minutes } }
-    private var pickups: Int { period == .today ? 35 : 214 }
-
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    summary
-                    appList
-                    Text("sample data — real screen time needs Apple's entitlement")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .multilineTextAlignment(.center)
+            Group {
+                if blocks.isAuthorized {
+                    ScrollView {
+                        DeviceActivityReport(.totalActivity, filter: filter)
+                            .frame(minHeight: 700)
+                            .padding(16)
+                            .blur(radius: hidden ? 18 : 0)
+                    }
+                } else {
+                    ContentUnavailableView("Screen Time is off",
+                        systemImage: "chart.bar.xaxis",
+                        description: Text("Grant access in Settings to see your usage."))
                 }
-                .padding(16)
             }
             .navigationTitle("insights")
             .toolbar {
@@ -52,67 +55,9 @@ struct InsightsView: View {
         }
     }
 
-    private var summary: some View {
-        VStack(spacing: 8) {
-            Text(format(total))
-                .font(.system(size: 56, weight: .bold, design: .rounded))
-                .foregroundStyle(.green)
-                .contentTransition(.numericText())
-            HStack(spacing: 24) {
-                Label("screen time", systemImage: "hourglass")
-                Label("\(pickups) pickups", systemImage: "iphone")
-            }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
-        .redacted(reason: hidden ? .placeholder : [])
-    }
-
-    private var appList: some View {
-        VStack(spacing: 18) {
-            ForEach(usage) { app in
-                row(app, peak: usage.first?.minutes ?? 1)
-            }
-        }
-        .padding(16)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
-        .redacted(reason: hidden ? .placeholder : [])
-    }
-
-    private func row(_ app: AppUsage, peak: Int) -> some View {
-        HStack(spacing: 12) {
-            Text(app.name.prefix(1))
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(width: 40, height: 40)
-                .background(app.tint, in: RoundedRectangle(cornerRadius: 10))
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(app.name).font(.title3)
-                    Spacer()
-                    Text(format(app.minutes)).foregroundStyle(.green)
-                }
-                ProgressView(value: Double(app.minutes), total: Double(peak))
-                    .tint(.green)
-            }
-        }
-    }
-
-    private func format(_ minutes: Int) -> String {
-        minutes < 60 ? "\(minutes)m" : "\(minutes / 60)h \(minutes % 60)m"
-    }
-
-    private static func sample(_ period: Period) -> [AppUsage] {
-        let base: [(String, Int, Color)] = [
-            ("WhatsApp", 10, .green), ("YouTube", 9, .red), ("X", 9, .black),
-            ("Done", 4, .gray), ("Books", 3, .orange), ("Spotify", 3, .green),
-            ("Safari", 2, .blue), ("GymRats", 1, .red), ("Claude", 1, .brown),
-        ]
-        let factor = period == .today ? 1 : 6
-        return base.map { AppUsage(name: $0.0, minutes: $0.1 * factor, tint: $0.2) }
+    private var filter: DeviceActivityFilter {
+        DeviceActivityFilter(segment: .daily(during: period.interval),
+                             users: .all,
+                             devices: .init([.iPhone]))
     }
 }
