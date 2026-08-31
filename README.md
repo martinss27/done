@@ -35,7 +35,8 @@ swiftc -o /tmp/t Done/Habit.swift path/to/main.swift && /tmp/t
 - [x] Session timer that survives being paused — partial minutes are kept
 - [x] Streaks: consecutive days add up, a gap resets
 - [x] Local persistence (JSON, tolerant of new fields)
-- [x] Three tabs: Blocks, Insights, Settings
+- [x] Four tabs: Blocks, Focus, Insights, Settings
+- [x] Pomodoro: focus/short/long rounds, everything shielded but an allowlist
 - [ ] Block other apps until the habit is done
 - [ ] Real per-app screen time
 
@@ -56,6 +57,8 @@ the `com.apple.developer.family-controls` entitlement. Personal use does not.
 | `Done/Habit.swift` | Model, streak and progress rules, JSON store |
 | `Done/BlocksView.swift` | Habit cards with toggle and progress |
 | `Done/SessionView.swift` | Countdown for one session |
+| `Done/Pomodoro.swift` | Pomodoro cycle rules (pure) |
+| `Done/PomodoroView.swift` | Focus tab: timer, durations, allowlist |
 | `Done/InsightsView.swift` | Screen time layout (sample data) |
 | `project.yml` | Project spec — edit this, not the `.xcodeproj` |
 

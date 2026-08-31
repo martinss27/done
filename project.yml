@@ -10,11 +10,14 @@ targets:
     sources: [Done, Shared]
     dependencies:
       - target: DoneReport
+      - target: DoneWidget
     info:
       path: Done/Info.plist
       properties:
         UILaunchScreen: {}
         CFBundleDisplayName: Done
+        NSSupportsLiveActivities: true
+        NSAlarmKitUsageDescription: Rings when a focus round or a break ends.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.martinss27.done
@@ -22,6 +25,25 @@ targets:
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: Done/Done.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+
+  DoneWidget:
+    type: app-extension
+    platform: iOS
+    sources: [Widget, Shared]
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Focus
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.martinss27.done.widget
+        DEVELOPMENT_TEAM: R37QVQP98Y
+        CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
