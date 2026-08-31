@@ -15,6 +15,8 @@ struct PomodoroView: View {
     @AppStorage("pomoRemaining") private var paused = 0     // seconds left when paused
     @AppStorage("pomoPhase") private var phaseRaw = PomodoroPhase.focus.rawValue
     @AppStorage("pomoRounds") private var completedFocuses = 0
+    @AppStorage("pomoShorts") private var completedShorts = 0
+    @AppStorage("pomoLongs") private var completedLongs = 0
 
     @State private var now = Date()
     @State private var picking = false
@@ -40,6 +42,7 @@ struct PomodoroView: View {
                     dial
                     controls
                     settings
+                    tally
                 }
                 .padding(16)
             }
@@ -84,6 +87,39 @@ struct PomodoroView: View {
                 .buttonStyle(.bordered)
         }
         .tint(phase.isBreak ? .green : .white)
+    }
+
+    /// Same shape as the Insights legend: a dot, a label, a number per band.
+    private var tally: some View {
+        VStack(spacing: 10) {
+            HStack {
+                count(.white, "focus", completedFocuses)
+                count(.green, "short", completedShorts)
+                count(.blue, "long", completedLongs)
+            }
+            .padding(.vertical, 14)
+            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+
+            Button("Reset rounds", systemImage: "arrow.counterclockwise") { resetRounds() }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .disabled(completedFocuses + completedShorts + completedLongs == 0)
+        }
+    }
+
+    private func count(_ color: Color, _ label: String, _ value: Int) -> some View {
+        VStack(spacing: 4) {
+            Text("\(value)")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .monospacedDigit()
+            HStack(spacing: 6) {
+                Circle().fill(color).frame(width: 8, height: 8)
+                Text(label)
+            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var settings: some View {
@@ -155,9 +191,24 @@ struct PomodoroView: View {
     /// ponytail: one hop per call — a session left running overnight resumes at
     /// the next phase, not wherever the full cycle would have landed.
     private func advance() {
-        if phase == .focus { completedFocuses += 1 }
+        switch phase {
+        case .focus: completedFocuses += 1
+        case .shortBreak: completedShorts += 1
+        case .longBreak: completedLongs += 1
+        }
         phaseRaw = nextPhase(after: phase, completedFocuses: completedFocuses).rawValue
         paused = minutes(for: phase) * 60
+        endsAt = 0
+        syncShields()
+    }
+
+    /// Back to a clean first focus round, timer stopped and shields down.
+    private func resetRounds() {
+        completedFocuses = 0
+        completedShorts = 0
+        completedLongs = 0
+        phaseRaw = PomodoroPhase.focus.rawValue
+        paused = focusMinutes * 60
         endsAt = 0
         syncShields()
     }
