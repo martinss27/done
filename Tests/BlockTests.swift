@@ -178,3 +178,76 @@ extension BlockTests {
         XCTAssertEqual(0.duration, "0s", "a short visit must not read as 0m")
     }
 }
+
+final class ScheduleTests: XCTestCase {
+    private func at(_ hour: Int, _ minute: Int = 0) -> Date {
+        Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: Date())!
+    }
+
+    func testNoRangesMeansAllDay() {
+        let habit = Habit(name: "All day")
+        XCTAssertTrue(habit.applies(at: at(3)))
+        XCTAssertTrue(habit.applies(at: at(14)))
+    }
+
+    func testBlockDuringOnlyInsideTheRange() {
+        var habit = Habit(name: "Work hours")
+        habit.ranges = [TimeRange(start: 9 * 60, end: 17 * 60)]
+        XCTAssertFalse(habit.applies(at: at(8, 59)))
+        XCTAssertTrue(habit.applies(at: at(9)))
+        XCTAssertTrue(habit.applies(at: at(16, 59)))
+        XCTAssertFalse(habit.applies(at: at(17)))
+    }
+
+    func testUnblockDuringIsTheInverse() {
+        var habit = Habit(name: "Lunch only")
+        habit.blockDuring = false
+        habit.ranges = [TimeRange(start: 12 * 60, end: 13 * 60)]
+        XCTAssertTrue(habit.applies(at: at(9)))
+        XCTAssertFalse(habit.applies(at: at(12, 30)))
+        XCTAssertTrue(habit.applies(at: at(20)))
+    }
+
+    func testOutsideItsWindowAConditionBlockIsOpen() {
+        var habit = Habit(name: "Chess", conditions: [.steps(count: 10_000)])
+        habit.ranges = [TimeRange(start: 9 * 60, end: 17 * 60)]
+        let gate = Gate()
+        XCTAssertTrue(habit.isUnlocked(on: at(20), gate: gate), "steps unmet, but the block is off duty")
+        XCTAssertFalse(habit.isUnlocked(on: at(10), gate: gate))
+    }
+}
+
+final class ZoneTests: XCTestCase {
+    private func home(_ blockInside: Bool) -> Habit {
+        var habit = Habit(name: "Home", conditions: [.steps(count: 10_000)])
+        habit.zone = Zone(name: "Home", latitude: -9.6, longitude: -35.7, radius: 50,
+                          blockInside: blockInside)
+        return habit
+    }
+
+    func testNoZoneAppliesEverywhere() {
+        XCTAssertTrue(Habit(name: "Anywhere").appliesHere(gate: Gate()))
+    }
+
+    func testBlockHereOnlyLocksInsideTheCircle() {
+        let habit = home(true)
+        var gate = Gate()
+        XCTAssertFalse(habit.appliesHere(gate: gate))
+        gate.inZone.insert(habit.id)
+        XCTAssertTrue(habit.appliesHere(gate: gate))
+    }
+
+    func testUnlockHereIsTheInverse() {
+        let habit = home(false)
+        var gate = Gate()
+        XCTAssertTrue(habit.appliesHere(gate: gate), "away from the circle the block still holds")
+        gate.inZone.insert(habit.id)
+        XCTAssertFalse(habit.appliesHere(gate: gate))
+    }
+
+    func testAwayFromAZoneTheAppsOpenWithoutTheSteps() {
+        let habit = home(true)
+        XCTAssertTrue(habit.isUnlocked(on: Date(), gate: Gate()))
+    }
+}
+

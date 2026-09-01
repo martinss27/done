@@ -40,5 +40,12 @@ final class MonitorExtension: DeviceActivityMonitor {
     /// gate — the app rolls the day over instead.
     override func intervalDidStart(for activity: DeviceActivityName) {
         Diagnostics.log("intervalDidStart \(activity.rawValue)")
+        if activity.isWindow { Shield.apply() }
+    }
+
+    /// A time range closing is the other edge of a scheduled block.
+    override func intervalDidEnd(for activity: DeviceActivityName) {
+        Diagnostics.log("intervalDidEnd \(activity.rawValue)")
+        if activity.isWindow { Shield.apply() }
     }
 }

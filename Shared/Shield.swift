@@ -51,7 +51,16 @@ enum Shield {
 /// resets another's.
 extension DeviceActivityName {
     static func block(_ id: UUID) -> Self { Self("block-\(id.uuidString)") }
-    var blockID: UUID? { UUID(uuidString: rawValue.replacingOccurrences(of: "block-", with: "")) }
+    /// One activity per time range, purely so the system wakes us at its edges.
+    static func window(_ id: UUID, _ index: Int) -> Self { Self("window-\(id.uuidString)-\(index)") }
+
+    var isWindow: Bool { rawValue.hasPrefix("window-") }
+    var blockID: UUID? { rawValue.hasPrefix("block-") ? habitID : nil }
+    /// The block behind any activity we start, counter or window.
+    var habitID: UUID? {
+        guard let dash = rawValue.firstIndex(of: "-") else { return nil }
+        return UUID(uuidString: String(rawValue[rawValue.index(after: dash)...].prefix(36)))
+    }
 }
 
 extension DeviceActivityEvent.Name {
@@ -128,6 +137,38 @@ enum Monitoring {
         var all = armedState; all[id] = nil; Storage.save(all, Storage.Key.armed)
     }
 
+    /// Schedules one activity per time range so the system wakes the monitor at
+    /// each edge and the shield flips even with the app closed.
+    static func armWindows(_ habit: Habit) {
+        let mine = center.activities.filter { $0.isWindow && $0.habitID == habit.id }
+        let want = habit.isEnabled ? habit.ranges : []
+        let fingerprint = "\(habit.blockDuring)|" + want.map { "\($0.start)-\($0.end)" }.joined(separator: ",")
+        if windowState[habit.id] == fingerprint, mine.count == want.count { return }
+
+        if !mine.isEmpty { center.stopMonitoring(mine) }
+        for (i, range) in want.enumerated() {
+            // DeviceActivity ignores schedules shorter than 15 minutes.
+            guard range.end - range.start >= 15 else { continue }
+            let schedule = DeviceActivitySchedule(
+                intervalStart: DateComponents(hour: range.start / 60, minute: range.start % 60),
+                intervalEnd: DateComponents(hour: range.end / 60, minute: range.end % 60),
+                repeats: true)
+            do {
+                try center.startMonitoring(.window(habit.id, i), during: schedule)
+            } catch {
+                Diagnostics.log("WINDOW FAILED \(habit.name) \(range.label): \(error)")
+            }
+        }
+        setWindow(habit.id, fingerprint)
+    }
+
+    private static var windowState: [UUID: String] {
+        Storage.load([UUID: String].self, Storage.Key.windows) ?? [:]
+    }
+    private static func setWindow(_ id: UUID, _ value: String) {
+        var all = windowState; all[id] = value; Storage.save(all, Storage.Key.windows)
+    }
+
     /// Names of the activities the system is currently counting for us.
     static var active: [String] { center.activities.map(\.rawValue) }
 
@@ -142,10 +183,11 @@ enum Monitoring {
     static func armAll() {
         let gate = Gate.current
         let live = Set(Shield.habits.map(\.id))
-        let stale = center.activities.filter { $0.blockID.map { !live.contains($0) } ?? true }
+        let stale = center.activities.filter { $0.habitID.map { !live.contains($0) } ?? true }
         if !stale.isEmpty { center.stopMonitoring(stale) }
         for habit in Shield.habits {
             arm(habit, unlocked: gate.open.contains(habit.id))
+            armWindows(habit)
         }
     }
 }

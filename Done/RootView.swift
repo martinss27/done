@@ -4,6 +4,7 @@ struct RootView: View {
     @Bindable var store: HabitStore
     @State private var blocks = BlockController()
     @State private var health = Health()
+    @State private var geofence = Geofence()
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
@@ -14,7 +15,7 @@ struct RootView: View {
                 .tabItem { Label { Text("Focus") } icon: { tomatoSymbol } }
             InsightsView(blocks: blocks)
                 .tabItem { Label("Insights", systemImage: "chart.bar.fill") }
-            SettingsView(blocks: blocks, health: health)
+            SettingsView(blocks: blocks, health: health, geofence: geofence)
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
         .preferredColorScheme(.dark)
@@ -34,5 +35,6 @@ struct RootView: View {
         blocks.workoutMinutes = health.workoutMinutes
         blocks.mindfulMinutes = health.mindfulMinutes
         blocks.apply(store.habits)
+        geofence.sync(store.habits)
     }
 }

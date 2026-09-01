@@ -12,6 +12,9 @@ struct Gate: Codable, Equatable {
     var banked: Set<UUID> = []
     /// Blocks whose apps are open right now, burning the unlock they spent.
     var open: Set<UUID> = []
+    /// Blocks whose zone the phone is currently inside. Written by the app's
+    /// geofence, which is the only thing that gets woken for a boundary cross.
+    var inZone: Set<UUID> = []
     /// The day this state belongs to. Earned and spent unlocks do not carry over.
     var day: Date?
 

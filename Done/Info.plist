@@ -24,6 +24,10 @@
 	<string>Rings when a focus round or a break ends.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Reads your steps and workouts so moving can unlock the apps you blocked.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Locks and unlocks your apps when you arrive at or leave a place, with Done closed.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Shows the map so you can pick the place a block applies to.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UILaunchScreen</key>

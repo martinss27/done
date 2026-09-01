@@ -25,6 +25,8 @@ targets:
         NSSupportsLiveActivities: true
         NSAlarmKitUsageDescription: Rings when a focus round or a break ends.
         NSHealthShareUsageDescription: Reads your steps and workouts so moving can unlock the apps you blocked.
+        NSLocationWhenInUseUsageDescription: Shows the map so you can pick the place a block applies to.
+        NSLocationAlwaysAndWhenInUseUsageDescription: Locks and unlocks your apps when you arrive at or leave a place, with Done closed.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.martinss27.done

@@ -16,6 +16,9 @@ struct EditBlockView: View {
     @State private var showingDays = false
     @State private var unlockApps = FamilyActivitySelection()
     @State private var pickingUnlockApp = false
+    /// Which "how do you want to limit them?" tab is showing.
+    @State private var kind = "condition"
+    @State private var pickingZone = false
     @State private var customFor: String?
     @State private var customText = ""
 
@@ -26,6 +29,8 @@ struct EditBlockView: View {
         _habit = State(initialValue: editing ?? Habit(name: ""))
         _apps = State(initialValue: editing.map { blocks.selection(for: $0.id) } ?? .init())
         _unlockApps = State(initialValue: editing.map { blocks.unlockSelection(for: $0.id) } ?? .init())
+        if editing?.zone != nil { _kind = State(initialValue: "place") }
+        else { _kind = State(initialValue: editing?.ranges.isEmpty == false ? "time" : "condition") }
     }
 
     private var appCount: Int { apps.applicationTokens.count + apps.categoryTokens.count }
@@ -39,7 +44,11 @@ struct EditBlockView: View {
                     nameCard
                     appsCard
                     limitKindCard
-                    conditionsCard
+                    switch kind {
+                    case "time": timeCard
+                    case "place": placeCard
+                    default: conditionsCard
+                    }
                     daysCard
                 }
                 .padding(16)
@@ -49,6 +58,7 @@ struct EditBlockView: View {
         .preferredColorScheme(.dark)
         .familyActivityPicker(isPresented: $pickingApps, selection: $apps)
         .familyActivityPicker(isPresented: $pickingUnlockApp, selection: $unlockApps)
+        .fullScreenCover(isPresented: $pickingZone) { ZonePickerView(zone: $habit.zone) }
     }
 
     private var bar: some View {
@@ -105,11 +115,11 @@ struct EditBlockView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("clock.fill", "How do you want to limit them?")
             HStack(spacing: 10) {
-                kindTab("key.fill", "Condition", active: true)
-                kindTab("clock.fill", "Time", active: false)
-                kindTab("mappin.and.ellipse", "Place", active: false)
-                kindTab("dot.radiowaves.left.and.right", "Device", active: false)
+                Button { kind = "condition" } label: { kindTab("key.fill", "Condition", active: kind == "condition") }
+                Button { pickTime() } label: { kindTab("clock.fill", "Time", active: kind == "time") }
+                Button { pickPlace() } label: { kindTab("mappin.and.ellipse", "Place", active: kind == "place") }
             }
+            .buttonStyle(.plain)
         }
         .card()
     }
@@ -128,6 +138,129 @@ struct EditBlockView: View {
             }
         }
         .foregroundStyle(active ? .white : .secondary)
+    }
+
+    /// The Time tab starts with the range the reference app shows by default.
+    private func pickTime() {
+        kind = "time"
+        if habit.ranges.isEmpty { habit.ranges = [TimeRange()] }
+    }
+
+    /// Opening Place with nothing set yet goes straight to the map, the way the
+    /// tab reads: pick the place.
+    private func pickPlace() {
+        kind = "place"
+        if habit.zone == nil { pickingZone = true }
+    }
+
+    private var placeCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("mappin.and.ellipse", "Where should this block apply?")
+            Button { pickingZone = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: habit.zone == nil ? "plus.circle" : "mappin.circle.fill")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habit.zone.map { $0.name.isEmpty ? "Unnamed place" : $0.name }
+                             ?? "Choose a place")
+                            .font(.body.weight(.medium))
+                        if let zone = habit.zone {
+                            Text("\(Int(zone.radius))m · "
+                                 + (zone.blockInside ? "blocked here" : "the only place they open"))
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                }
+                .padding(16)
+                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+
+            if habit.zone != nil {
+                Button("Remove this place") { habit.zone = nil }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .card()
+    }
+
+    private var timeCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("clock.fill", "Use the apps you selected on a schedule")
+
+            ForEach(habit.ranges.indices, id: \.self) { i in
+                HStack(spacing: 10) {
+                    timeChip($habit.ranges[i].start)
+                    Image(systemName: "arrow.right").foregroundStyle(.secondary)
+                    timeChip($habit.ranges[i].end)
+                    Spacer()
+                    if habit.ranges.count > 1 {
+                        Button { habit.ranges.remove(at: i) } label: {
+                            Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(12)
+                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+            }
+
+            Button { habit.ranges.append(TimeRange()) } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Add range").font(.body.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(14)
+                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: 4) {
+                modeTab("Block during", on: habit.blockDuring)
+                modeTab("Unblock during", on: !habit.blockDuring)
+            }
+            .padding(4)
+            .background(.white.opacity(0.07), in: Capsule())
+
+            Text(habit.blockDuring ? "Apps are blocked during these times."
+                 : "Apps are blocked all day EXCEPT during these times.")
+                .font(.footnote).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+
+            if habit.ranges.contains(where: { $0.end - $0.start < 15 }) {
+                Text("A range shorter than 15 minutes is ignored by iOS.")
+                    .font(.footnote).foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .card()
+    }
+
+    private func timeChip(_ minutes: Binding<Int>) -> some View {
+        DatePicker("", selection: Binding(
+            get: { Calendar.current.date(bySettingHour: minutes.wrappedValue / 60,
+                                         minute: minutes.wrappedValue % 60, second: 0, of: Date())! },
+            set: { date in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+                minutes.wrappedValue = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+            }), displayedComponents: .hourAndMinute)
+            .labelsHidden()
+    }
+
+    private func modeTab(_ title: String, on: Bool) -> some View {
+        Button { habit.blockDuring = (title == "Block during") } label: {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(on ? AnyShapeStyle(.white.opacity(0.18)) : AnyShapeStyle(.clear), in: Capsule())
+                .foregroundStyle(on ? .white : .secondary)
+        }
+        .buttonStyle(.plain)
     }
 
     private var conditionsCard: some View {
@@ -158,7 +291,6 @@ struct EditBlockView: View {
                          make: { .appTime(minutes: $0) },
                          value: { if case .appTime(let m) = $0 { m } else { nil } },
                          extra: { AnyView(unlockAppPicker) })
-            soonRow("scribble", "Shortcut")
             blockAgainRow
 
             if habit.conditions.isEmpty {
@@ -331,21 +463,6 @@ struct EditBlockView: View {
     private func set(kind: String, to condition: Condition) {
         guard let i = habit.conditions.firstIndex(where: { $0.kind == kind }) else { return }
         habit.conditions[i] = condition
-    }
-
-    private func soonRow(_ icon: String, _ title: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.title3)
-                .frame(width: 44, height: 44)
-                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-            Text(title).font(.title3.weight(.semibold))
-            Spacer()
-            Image(systemName: "plus.circle").font(.title2)
-        }
-        .padding(14)
-        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
-        .foregroundStyle(.secondary)
     }
 
     private var daysCard: some View {

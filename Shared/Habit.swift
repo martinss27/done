@@ -1,6 +1,31 @@
 import Foundation
 import Observation
 
+/// A slice of the day, in minutes from midnight. ponytail: same-day only —
+/// a range that wraps past midnight is split by the user into two ranges.
+struct TimeRange: Codable, Equatable, Identifiable {
+    var id = UUID()
+    var start: Int = 9 * 60
+    var end: Int = 17 * 60
+
+    var label: String {
+        let d = Calendar.current.date(bySettingHour: start / 60, minute: start % 60, second: 0, of: Date())!
+        let e = Calendar.current.date(bySettingHour: end / 60, minute: end % 60, second: 0, of: Date())!
+        return "\(d.formatted(date: .omitted, time: .shortened)) – \(e.formatted(date: .omitted, time: .shortened))"
+    }
+}
+
+/// A circle on the map a block cares about. Whether being inside it locks or
+/// unlocks the apps is `blockInside`.
+struct Zone: Codable, Equatable {
+    var name: String = ""
+    var latitude: Double
+    var longitude: Double
+    /// Metres. CoreLocation ignores anything under ~50.
+    var radius: Double = 50
+    var blockInside: Bool = true
+}
+
 struct Habit: Identifiable, Codable, Equatable {
     var id = UUID()
     var name: String
@@ -18,6 +43,12 @@ struct Habit: Identifiable, Codable, Equatable {
     var days: Set<Int> = [1, 2, 3, 4, 5, 6, 7]
     /// Minutes of use after an unlock before the apps shield again. nil = stays open.
     var blockAgainMinutes: Int? = nil
+    /// Times of day the block applies. Empty means all day.
+    var ranges: [TimeRange] = []
+    /// true: the ranges are when the apps are blocked. false: the only times they are not.
+    var blockDuring: Bool = true
+    /// Where the block applies. nil means everywhere.
+    var zone: Zone? = nil
 
     // Decode tolerantly so adding a field never wipes saved habits.
     init(from decoder: Decoder) throws {
@@ -35,6 +66,9 @@ struct Habit: Identifiable, Codable, Equatable {
             ?? [.timer(minutes: targetMinutes)]
         days = try c.decodeIfPresent(Set<Int>.self, forKey: .days) ?? [1, 2, 3, 4, 5, 6, 7]
         blockAgainMinutes = try c.decodeIfPresent(Int.self, forKey: .blockAgainMinutes)
+        ranges = try c.decodeIfPresent([TimeRange].self, forKey: .ranges) ?? []
+        blockDuring = try c.decodeIfPresent(Bool.self, forKey: .blockDuring) ?? true
+        zone = try c.decodeIfPresent(Zone.self, forKey: .zone)
     }
 
     init(name: String, targetMinutes: Int = 5, conditions: [Condition] = []) {
@@ -73,6 +107,23 @@ struct Habit: Identifiable, Codable, Equatable {
         return calendar.isDate(lastDone, inSameDayAs: day)
     }
 
+    /// Whether the block is in force at `date`. No ranges means all day; with
+    /// ranges it is either only inside them or only outside them.
+    func applies(at date: Date, calendar: Calendar = .current) -> Bool {
+        guard !ranges.isEmpty else { return true }
+        let minute = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
+        let inside = ranges.contains { minute >= $0.start && minute < $0.end }
+        return blockDuring ? inside : !inside
+    }
+
+    /// Whether the block is in force where the phone is. Only the app can see
+    /// that, so the answer arrives through the gate.
+    func appliesHere(gate: Gate) -> Bool {
+        guard let zone else { return true }
+        let inside = gate.inZone.contains(id)
+        return zone.blockInside ? inside : !inside
+    }
+
     func runs(on day: Date, calendar: Calendar = .current) -> Bool {
         days.contains(calendar.component(.weekday, from: day))
     }
@@ -82,7 +133,8 @@ struct Habit: Identifiable, Codable, Equatable {
     /// Health and app-time answers come from `gate` because the two processes
     /// that can measure them are not the one asking.
     func isUnlocked(on day: Date, gate: Gate, calendar: Calendar = .current) -> Bool {
-        guard runs(on: day, calendar: calendar) else { return true }
+        guard runs(on: day, calendar: calendar), applies(at: day, calendar: calendar),
+              appliesHere(gate: gate) else { return true }
         return conditions.allSatisfy { condition in
             switch condition {
             case .timer: isDone(on: day, calendar: calendar)
@@ -148,7 +200,16 @@ extension Habit {
     var cardDetail: String {
         var parts = conditions.map(\.detail)
         if let spend = blockAgainMinutes { parts.append("\(spend) min per unlock") }
+        parts.append(contentsOf: scheduleDetail.map { [$0] } ?? [])
+        if let zone { parts.append(zone.blockInside ? "at \(zone.name)" : "away from \(zone.name)") }
         return parts.joined(separator: " · ")
+    }
+
+    /// The hours the block covers, once it is not simply all day.
+    var scheduleDetail: String? {
+        guard !ranges.isEmpty else { return nil }
+        let list = ranges.map(\.label).joined(separator: ", ")
+        return blockDuring ? list : "all day except \(list)"
     }
 
     /// One sentence for the shield: what this block wants before it opens.
@@ -167,7 +228,10 @@ extension Habit {
                 "use \(name) for \(m) min"
             }
         }
-        guard !asks.isEmpty else { return "Open Done to set this block up." }
+        guard !asks.isEmpty else {
+            if let schedule = scheduleDetail { return "This block runs \(schedule)." }
+            return "Open Done to set this block up."
+        }
         let list = asks.count == 1 ? asks[0]
             : asks.dropLast().joined(separator: ", ") + " and " + asks[asks.count - 1]
         let sentence = list.prefix(1).uppercased() + list.dropFirst()

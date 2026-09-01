@@ -24,6 +24,7 @@ enum Storage {
         static let gate = "gate"
         static let diagnostics = "diagnostics"
         static let armed = "armed"
+        static let windows = "windows"
         static let focus = "focus"
     }
 }
