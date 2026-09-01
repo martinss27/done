@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Done</string>
+	<string>Done Monitor</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,22 +15,17 @@
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
-	<string>APPL</string>
+	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>NSAlarmKitUsageDescription</key>
-	<string>Rings when a focus round or a break ends.</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Reads your steps and workouts so moving can unlock the apps you blocked.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Locks and unlocks your apps when you arrive at or leave a place, with Done closed.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Shows the map so you can pick the place a block applies to.</string>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>UILaunchScreen</key>
-	<dict/>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.deviceactivity.monitor-extension</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).MonitorExtension</string>
+	</dict>
 </dict>
 </plist>

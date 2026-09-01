@@ -7,6 +7,12 @@ struct AppRow: Identifiable {
     let token: ApplicationToken?
     let name: String
     let seconds: Int
+    let pickups: Int
+
+    /// How long a visit lasts on average. Short visits repeated all day are the
+    /// compulsive pattern; the raw pickup count alone cannot tell them apart
+    /// from an app you simply open a lot on purpose.
+    var secondsPerPickup: Int { pickups > 0 ? seconds / pickups : seconds }
 }
 
 struct ActivityModel {
@@ -24,7 +30,7 @@ struct TotalActivityReport: DeviceActivityReportScene {
     func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> ActivityModel {
         var total = 0.0
         var pickups = 0
-        var byApp: [String: (token: ApplicationToken?, name: String, seconds: Double)] = [:]
+        var byApp: [String: (token: ApplicationToken?, name: String, seconds: Double, pickups: Int)] = [:]
 
         for await result in data {
             for await segment in result.activitySegments {
@@ -36,15 +42,19 @@ struct TotalActivityReport: DeviceActivityReportScene {
                         pickups += app.numberOfPickups
                         byApp[key] = (info.token,
                                       info.localizedDisplayName ?? "App",
-                                      (byApp[key]?.seconds ?? 0) + app.totalActivityDuration)
+                                      (byApp[key]?.seconds ?? 0) + app.totalActivityDuration,
+                                      (byApp[key]?.pickups ?? 0) + app.numberOfPickups)
                     }
                 }
             }
         }
 
         let apps = byApp
-            .map { AppRow(id: $0.key, token: $0.value.token, name: $0.value.name, seconds: Int($0.value.seconds)) }
-            .filter { $0.seconds >= 60 }
+            .map { AppRow(id: $0.key, token: $0.value.token, name: $0.value.name,
+                          seconds: Int($0.value.seconds), pickups: $0.value.pickups) }
+            // An app opened over and over for seconds at a time belongs in the
+            // list even though it barely registers as screen time.
+            .filter { $0.seconds >= 60 || $0.pickups >= 3 }
             .sorted { $0.seconds > $1.seconds }
 
         return ActivityModel(totalSeconds: Int(total), pickups: pickups, apps: apps)

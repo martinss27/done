@@ -3,6 +3,8 @@ import SwiftUI
 struct RootView: View {
     @Bindable var store: HabitStore
     @State private var blocks = BlockController()
+    @State private var health = Health()
+    @State private var geofence = Geofence()
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
@@ -13,14 +15,26 @@ struct RootView: View {
                 .tabItem { Label { Text("Focus") } icon: { tomatoSymbol } }
             InsightsView(blocks: blocks)
                 .tabItem { Label("Insights", systemImage: "chart.bar.fill") }
-            SettingsView(blocks: blocks)
+            SettingsView(blocks: blocks, health: health, geofence: geofence)
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
         .preferredColorScheme(.dark)
         .tint(.white)
-        .task { blocks.apply(store.habits) }
-        .onChange(of: store.habits) { blocks.apply(store.habits) }
-        .onChange(of: blocks.selections) { blocks.apply(store.habits) }
-        .onChange(of: phase) { if phase == .active { blocks.apply(store.habits) } }
+        .task { await refreshSteps() }
+        .onChange(of: store.habits) { Task { await refreshSteps() } }
+        .onChange(of: blocks.selections) { Task { await refreshSteps() } }
+        .onChange(of: blocks.unlockSelections) { Task { await refreshSteps() } }
+        .onChange(of: phase) { if phase == .active { Task { await refreshSteps() } } }
+    }
+
+    /// Health is the only unlock source that changes while the app is closed,
+    /// so every return to the foreground re-reads it before re-shielding.
+    private func refreshSteps() async {
+        await health.refresh()
+        blocks.steps = health.steps
+        blocks.workoutMinutes = health.workoutMinutes
+        blocks.mindfulMinutes = health.mindfulMinutes
+        blocks.apply(store.habits)
+        geofence.sync(store.habits)
     }
 }
