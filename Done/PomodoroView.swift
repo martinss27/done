@@ -46,8 +46,7 @@ struct PomodoroView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     dial
-                    controls
-                    settings
+                    panel
                     tally
                 }
                 .padding(16)
@@ -58,9 +57,9 @@ struct PomodoroView: View {
             .onReceive(tick) { _ in
                 guard isRunning else { return }
                 now = Date()
-                if remaining == 0 { if !hasRealAlarm { FocusAlarm.ring() }; advance() }
+                if remaining == 0 { if !hasRealAlarm { FocusAlarm.ring() }; complete() }
             }
-            .onChange(of: scene) { if scene == .active { Task { alarmOn = await alarmAllowed() }; now = Date(); if isRunning && remaining == 0 { advance() } } }
+            .onChange(of: scene) { if scene == .active { Task { alarmOn = await alarmAllowed() }; now = Date(); if isRunning && remaining == 0 { complete() } } }
             .onChange(of: focusMinutes) { resetIfIdle() }
             .onChange(of: shortBreakMinutes) { resetIfIdle() }
             .onChange(of: longBreakMinutes) { resetIfIdle() }
@@ -74,7 +73,7 @@ struct PomodoroView: View {
                     .font(.headline)
                     .foregroundStyle(.green)
             }
-            Text(String(format: "%02d:%02d", remaining / 60, remaining % 60))
+            Text(clock(remaining))
                 .font(.system(size: 72, weight: .light, design: .rounded))
                 .monospacedDigit()
                 .contentTransition(.numericText())
@@ -84,18 +83,79 @@ struct PomodoroView: View {
         .padding(.top, 12)
     }
 
-    private var controls: some View {
-        HStack(spacing: 12) {
-            // Black label: the prominent button is filled with the phase tint,
-            // and white on white was invisible.
-            Button { isRunning ? pause() : start() } label: {
-                Text(isRunning ? "Pause" : "Start").foregroundStyle(.black)
+    /// One card: each timer owns its play/pause, its countdown and its length,
+    /// so the row you press is the row you tune. Only one ever runs — while
+    /// focus is going, the two breaks are dead, and the other way round.
+    private var panel: some View {
+        VStack(spacing: 0) {
+            timerRow(.focus, $focusMinutes, 5...90, step: 5)
+            Divider()
+            timerRow(.shortBreak, $shortBreakMinutes, 1...30, step: 1)
+            Divider()
+            timerRow(.longBreak, $longBreakMinutes, 5...60, step: 5)
+            Divider()
+            alarmRow
+            Divider()
+            Button { picking = true } label: {
+                HStack {
+                    Text("Apps allowed in focus")
+                    Spacer()
+                    Text("\(blocks.focusAllowed.applicationTokens.count)")
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(12)
             }
-            .buttonStyle(.borderedProminent)
-            Button("Skip") { advance() }
-                .buttonStyle(.bordered)
+            .disabled(!blocks.isAuthorized)
+            .foregroundStyle(.white)
         }
-        .tint(phase.isBreak ? .green : .white)
+        .background(.white.opacity(0.06), in: .rect(cornerRadius: 16))
+        .overlay(alignment: .bottom) {
+            if !blocks.isAuthorized {
+                Text("Grant Screen Time access in Settings to block apps during focus.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .offset(y: 34)
+            }
+        }
+        .padding(.bottom, blocks.isAuthorized ? 0 : 34)
+    }
+
+    private func timerRow(_ row: PomodoroPhase, _ length: Binding<Int>, _ range: ClosedRange<Int>, step: Int) -> some View {
+        let armed = row == phase
+        let running = armed && isRunning
+        let locked = isRunning && !armed
+        return HStack(spacing: 12) {
+            Button { toggle(row) } label: {
+                Image(systemName: running ? "pause.fill" : "play.fill")
+                    .font(.headline)
+                    .frame(width: 38, height: 38)
+                    .background(.white.opacity(0.1), in: Circle())
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(locked)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.title)
+                    .font(.body.weight(running ? .semibold : .regular))
+                Text(clock(armed ? remaining : length.wrappedValue * 60))
+                    .font(.caption).monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.numericText())
+            }
+            Spacer(minLength: 8)
+            // Retuning a row mid-round would move the finish line under you,
+            // so the length only changes while that row is stopped.
+            Stepper("", value: length, in: range, step: step)
+                .labelsHidden()
+                .disabled(running)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .foregroundStyle(locked ? Color.secondary : (row.isBreak ? .green : .white))
+    }
+
+    private func clock(_ seconds: Int) -> String {
+        String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 
     /// Same shape as the Insights legend: a dot, a label, a number per band.
@@ -141,40 +201,6 @@ struct PomodoroView: View {
         return minutes < 60 ? "\(minutes)m" : "\(minutes / 60)h \(minutes % 60)m"
     }
 
-    private var settings: some View {
-        VStack(spacing: 0) {
-            stepper("Focus", $focusMinutes, 5...90, step: 5)
-            Divider()
-            stepper("Short break", $shortBreakMinutes, 1...30, step: 1)
-            Divider()
-            stepper("Long break", $longBreakMinutes, 5...60, step: 5)
-            Divider()
-            alarmRow
-            Divider()
-            Button { picking = true } label: {
-                HStack {
-                    Text("Apps allowed in focus")
-                    Spacer()
-                    Text("\(blocks.focusAllowed.applicationTokens.count)")
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
-                }
-                .padding(12)
-            }
-            .disabled(!blocks.isAuthorized)
-        }
-        .foregroundStyle(.white)
-        .background(.white.opacity(0.06), in: .rect(cornerRadius: 16))
-        .overlay(alignment: .bottom) {
-            if !blocks.isAuthorized {
-                Text("Grant Screen Time access in Settings to block apps during focus.")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .offset(y: 34)
-            }
-        }
-        .padding(.bottom, blocks.isAuthorized ? 0 : 34)
-    }
-
     /// A round that ends without a sound is a round you miss, so say plainly
     /// when the permission is missing instead of failing quietly.
     @ViewBuilder private var alarmRow: some View {
@@ -216,17 +242,6 @@ struct PomodoroView: View {
         return await FocusAlarm.request()
     }
 
-    private func stepper(_ title: String, _ value: Binding<Int>, _ range: ClosedRange<Int>, step: Int) -> some View {
-        Stepper(value: value, in: range, step: step) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text("\(value.wrappedValue) min").foregroundStyle(.secondary)
-            }
-        }
-        .padding(12)
-    }
-
     private func minutes(for phase: PomodoroPhase) -> Int {
         switch phase {
         case .focus: focusMinutes
@@ -240,7 +255,7 @@ struct PomodoroView: View {
         now = Date()
         endsAt = now.timeIntervalSinceReferenceDate + Double(paused)
         let ends = now.addingTimeInterval(Double(paused))
-        let body = phase.isBreak ? "Break over — back to focus." : "Focus done — take a break."
+        let body = phase.isBreak ? "Break over — back to focus." : "Focus done — break, or another round?"
         if #available(iOS 26.0, *) {
             let seconds = Double(paused)
             let title = phase.title
@@ -259,22 +274,43 @@ struct PomodoroView: View {
         syncShields()
     }
 
-    /// Breaks and the next round start on a tap, never on their own: a phase
-    /// that rolled over unattended could leave the shield up with nobody looking.
-    /// ponytail: one hop per call — a session left running overnight resumes at
-    /// the next phase, not wherever the full cycle would have landed.
-    private func advance() {
-        let spent = max(minutes(for: phase) * 60 - remaining, 0)
-        switch phase {
-        case .focus: completedFocuses += 1; focusSeconds += spent
-        case .shortBreak: completedShorts += 1; shortSeconds += spent
-        case .longBreak: completedLongs += 1; longSeconds += spent
-        }
-        phaseRaw = nextPhase(after: phase, completedFocuses: completedFocuses).rawValue
+    /// The play button on a row. A row already running pauses; any other row
+    /// takes over, banking whatever time the old one had on the clock.
+    private func toggle(_ row: PomodoroPhase) {
+        guard !isRunning || row == phase else { return }   // one timer at a time
+        if row == phase { isRunning ? pause() : start(); return }
+        bankSpent()
+        phaseRaw = row.rawValue
+        paused = minutes(for: row) * 60
+        start()
+    }
+
+    /// Time already on the clock is time you spent, so switching rows keeps
+    /// the minutes and drops the leftover countdown. Only a timer that runs
+    /// out earns a round.
+    private func bankSpent() {
+        add(seconds: max(minutes(for: phase) * 60 - remaining, 0), round: false)
         paused = minutes(for: phase) * 60
         endsAt = 0
-        stopAlarm()   // Skip mid-round: the old alarm must not still fire
+        stopAlarm()
+    }
+
+    /// A timer that reaches zero counts its round and stops there. Nothing
+    /// starts on its own — the next row is a tap away, and which one is yours.
+    private func complete() {
+        add(seconds: minutes(for: phase) * 60, round: true)
+        paused = minutes(for: phase) * 60
+        endsAt = 0
+        stopAlarm()
         syncShields()
+    }
+
+    private func add(seconds: Int, round: Bool) {
+        switch phase {
+        case .focus: focusSeconds += seconds; if round { completedFocuses += 1 }
+        case .shortBreak: shortSeconds += seconds; if round { completedShorts += 1 }
+        case .longBreak: longSeconds += seconds; if round { completedLongs += 1 }
+        }
     }
 
     /// Back to a clean first focus round, timer stopped and shields down.
