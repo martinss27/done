@@ -8,7 +8,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("App blocking") {
+                Section("App permissions") {
                     if blocks.isAuthorized {
                         Label("Screen Time access granted", systemImage: "checkmark.circle.fill")
                             .foregroundStyle(.green)
@@ -19,6 +19,16 @@ struct SettingsView: View {
                             Label("Grant Screen Time access", systemImage: "lock.open")
                         }
                         Text("Needed to lock apps until a habit is done.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    if geofence.isAuthorized {
+                        Label("Location always allowed", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                    } else {
+                        Button { geofence.requestAuthorization() } label: {
+                            Label("Allow location always", systemImage: "mappin.and.ellipse")
+                        }
+                        Text("A place-based block only flips when iOS can see you cross the circle with Done closed, which needs Always.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -33,18 +43,6 @@ struct SettingsView: View {
                     }
                     Text("Garmin syncs into Apple Health on its own schedule, so steps refresh when you open Done.")
                         .font(.caption).foregroundStyle(.secondary)
-                }
-                Section("Location") {
-                    if geofence.isAuthorized {
-                        Label("Always allowed", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    } else {
-                        Button { geofence.requestAuthorization() } label: {
-                            Label("Allow location always", systemImage: "mappin.and.ellipse")
-                        }
-                        Text("A place-based block only flips when iOS can see you cross the circle with Done closed, which needs Always.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
                 }
             }
             .navigationTitle("settings")
