@@ -15,7 +15,8 @@ struct Gate: Codable, Equatable {
     /// Blocks whose zone the phone is currently inside. Written by the app's
     /// geofence, which is the only thing that gets woken for a boundary cross.
     var inZone: Set<UUID> = []
-    /// The day this state belongs to. Earned and spent unlocks do not carry over.
+    /// The day this state belongs to. Earned and spent unlocks do not carry over
+    /// past midnight — a new day starts every block from scratch.
     var day: Date?
 
     /// Clears yesterday's unlocks. Called by the app, not by interval callbacks:
