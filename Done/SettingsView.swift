@@ -46,18 +46,6 @@ struct SettingsView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                Section("Blocking debug") {
-                    LabeledContent("Monitored", value: "\(Monitoring.active.count)")
-                    LabeledContent("Banked", value: "\(blocks.gate.banked.count)")
-                    LabeledContent("Open", value: "\(blocks.gate.open.count)")
-                    ForEach(Diagnostics.lines, id: \.self) { line in
-                        Text(line).font(.caption2.monospaced())
-                    }
-                    Button("Clear log") { Diagnostics.clear() }
-                }
-                Section {
-                    LabeledContent("Version", value: "0.2")
-                }
             }
             .navigationTitle("settings")
         }
