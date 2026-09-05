@@ -4,9 +4,19 @@ import SwiftUI
 
 /// What the list is ranked by. Time answers "where did the day go"; pickups
 /// answers "what keeps pulling me back", which is a different app more often
-/// than not.
+/// than not. Notifications answer who started it — an app can interrupt all
+/// day without ever showing up in the other two lists.
 enum Rank: String, CaseIterable {
-    case time, pickups
+    case time, pickups, alerts
+
+    /// The row value this ranking sorts and colours by.
+    func value(_ app: AppRow) -> Int {
+        switch self {
+        case .time: app.seconds
+        case .pickups: app.pickups
+        case .alerts: app.notifications
+        }
+    }
 }
 
 struct ActivityView: View {
@@ -14,18 +24,10 @@ struct ActivityView: View {
     @State private var rank: Rank = .time
 
     private var apps: [AppRow] {
-        switch rank {
-        case .time: model.apps.sorted { $0.seconds > $1.seconds }
-        case .pickups: model.apps.sorted { $0.pickups > $1.pickups }
-        }
+        model.apps.sorted { rank.value($0) > rank.value($1) }
     }
 
-    private var peak: Int {
-        switch rank {
-        case .time: max(apps.first?.seconds ?? 1, 1)
-        case .pickups: max(apps.first?.pickups ?? 1, 1)
-        }
-    }
+    private var peak: Int { max(apps.map(rank.value).max() ?? 1, 1) }
 
     /// Absolute thresholds, so a colour means the same thing every day —
     /// relative-to-peak shading made a quiet day look as bad as a heavy one.
@@ -45,11 +47,27 @@ struct ActivityView: View {
         (50, .red, "50+"),
     ]
 
-    private func band(_ app: AppRow) -> Color {
+    /// Notifications arrive in far bigger numbers than pickups — a chat app
+    /// alone clears 50 on a quiet day — so the bands sit higher.
+    private static let alertBands: [(count: Int, color: Color, label: String)] = [
+        (0, .green, "few"),
+        (20, .yellow, "20+"),
+        (50, .orange, "50+"),
+        (100, .red, "100+"),
+    ]
+
+    private static func bands(for rank: Rank) -> [(count: Int, color: Color, label: String)] {
         switch rank {
-        case .time: Self.bands.last { app.seconds / 60 >= $0.minutes }?.color ?? .green
-        case .pickups: Self.pickupBands.last { app.pickups >= $0.count }?.color ?? .green
+        case .time: bands.map { ($0.minutes, $0.color, $0.label) }
+        case .pickups: pickupBands
+        case .alerts: alertBands
         }
+    }
+
+    private func band(_ app: AppRow) -> Color {
+        // Time bands are in minutes; the other two count raw events.
+        let value = rank == .time ? app.seconds / 60 : rank.value(app)
+        return Self.bands(for: rank).last { value >= $0.count }?.color ?? .green
     }
 
     var body: some View {
@@ -86,11 +104,8 @@ struct ActivityView: View {
     }
 
     private var legend: some View {
-        let labels: [(color: Color, label: String)] = rank == .time
-            ? Self.bands.map { ($0.color, $0.label) }
-            : Self.pickupBands.map { ($0.color, $0.label) }
-        return HStack {
-            ForEach(labels, id: \.label) { band in
+        HStack {
+            ForEach(Self.bands(for: rank), id: \.label) { band in
                 HStack(spacing: 6) {
                     Circle().fill(band.color).frame(width: 8, height: 8)
                     Text(band.label)
@@ -109,9 +124,10 @@ struct ActivityView: View {
             Text(model.totalSeconds.duration)
                 .font(.system(size: 38, weight: .bold, design: .rounded))
                 .foregroundStyle(.green)
-            HStack(spacing: 24) {
+            HStack(spacing: 16) {
                 Label("screen time", systemImage: "hourglass")
                 Label("\(model.pickups) pickups", systemImage: "iphone")
+                Label("\(model.notifications) alerts", systemImage: "bell")
             }
             .font(.footnote)
             .foregroundStyle(.secondary)
@@ -137,15 +153,19 @@ struct ActivityView: View {
                 HStack {
                     Text(app.name).font(.title3).lineLimit(1)
                     Spacer()
-                    Text(rank == .time ? app.seconds.duration : "\(app.pickups)×")
+                    Text(rank == .time ? app.seconds.duration : "\(rank.value(app))×")
                         .foregroundStyle(band(app))
                         .monospacedDigit()
                 }
-                ProgressView(value: Double(rank == .time ? app.seconds : app.pickups),
-                             total: Double(peak))
+                ProgressView(value: Double(rank.value(app)), total: Double(peak))
                     .tint(band(app))
                 if rank == .pickups {
                     Text("\(app.pickups) pickups · \(app.seconds.duration) · \(app.secondsPerPickup.duration) each")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                if rank == .alerts {
+                    Text("\(app.notifications) notifications · \(app.pickups) pickups")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
