@@ -26,5 +26,6 @@ enum Storage {
         static let armed = "armed"
         static let windows = "windows"
         static let focus = "focus"
+        static let reports = "reports"
     }
 }
