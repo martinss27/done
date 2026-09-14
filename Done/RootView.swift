@@ -6,6 +6,7 @@ struct RootView: View {
     @State private var health = Health()
     @State private var geofence = Geofence()
     @Environment(\.scenePhase) private var phase
+    @AppStorage("appearance") private var appearance = Appearance.dark
 
     var body: some View {
         TabView {
@@ -18,8 +19,8 @@ struct RootView: View {
             SettingsView(blocks: blocks, health: health, geofence: geofence)
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
-        .preferredColorScheme(.dark)
-        .tint(.white)
+        .preferredColorScheme(appearance.scheme)
+        .tint(Color.primary)
         .task { await refreshSteps() }
         .onChange(of: store.habits) { Task { await refreshSteps() } }
         .onChange(of: blocks.selections) { Task { await refreshSteps() } }
@@ -36,5 +37,18 @@ struct RootView: View {
         blocks.mindfulMinutes = health.mindfulMinutes
         blocks.apply(store.habits)
         geofence.sync(store.habits)
+    }
+}
+
+/// Dark is the default so the app looks the way it always has until you pick.
+enum Appearance: String, CaseIterable {
+    case system, light, dark
+
+    var scheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
     }
 }
