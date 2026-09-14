@@ -42,7 +42,7 @@ struct InsightsView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Text("insights").font(.largeTitle.weight(.bold))
+            Text("insights").font(.title2.weight(.bold))
             Spacer(minLength: 8)
             Picker("", selection: $period) {
                 ForEach(Period.allCases, id: \.self) { Text($0.rawValue).tag($0) }
