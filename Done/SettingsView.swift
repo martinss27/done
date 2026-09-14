@@ -49,8 +49,6 @@ struct SettingsView: View {
                     } label: {
                         Label("Connect Apple Health", systemImage: "heart.fill")
                     }
-                    Text("Garmin syncs into Apple Health on its own schedule, so steps refresh when you open Done.")
-                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Section("Feedback") {
                     NavigationLink {
