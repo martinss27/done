@@ -7,14 +7,14 @@ import SwiftUI
 /// than not. Notifications answer who started it — an app can interrupt all
 /// day without ever showing up in the other two lists.
 enum Rank: String, CaseIterable {
-    case time, pickups, alerts
+    case time, pickups, notifications
 
     /// The row value this ranking sorts and colours by.
     func value(_ app: AppRow) -> Int {
         switch self {
         case .time: app.seconds
         case .pickups: app.pickups
-        case .alerts: app.notifications
+        case .notifications: app.notifications
         }
     }
 }
@@ -49,7 +49,7 @@ struct ActivityView: View {
 
     /// Notifications arrive in far bigger numbers than pickups — a chat app
     /// alone clears 50 on a quiet day — so the bands sit higher.
-    private static let alertBands: [(count: Int, color: Color, label: String)] = [
+    private static let notificationBands: [(count: Int, color: Color, label: String)] = [
         (0, .green, "few"),
         (20, .yellow, "20+"),
         (50, .orange, "50+"),
@@ -60,7 +60,7 @@ struct ActivityView: View {
         switch rank {
         case .time: bands.map { ($0.minutes, $0.color, $0.label) }
         case .pickups: pickupBands
-        case .alerts: alertBands
+        case .notifications: notificationBands
         }
     }
 
@@ -127,7 +127,7 @@ struct ActivityView: View {
             HStack(spacing: 16) {
                 Label("screen time", systemImage: "hourglass")
                 Label("\(model.pickups) pickups", systemImage: "iphone")
-                Label("\(model.notifications) alerts", systemImage: "bell")
+                Label("\(model.notifications) notifications", systemImage: "bell")
             }
             .font(.footnote)
             .foregroundStyle(.secondary)
@@ -164,7 +164,7 @@ struct ActivityView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
-                if rank == .alerts {
+                if rank == .notifications {
                     Text("\(app.notifications) notifications · \(app.pickups) pickups")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
