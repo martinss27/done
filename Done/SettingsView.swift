@@ -4,6 +4,7 @@ struct SettingsView: View {
     @Bindable var blocks: BlockController
     @Bindable var health: Health
     @Bindable var geofence: Geofence
+    @State private var feedback = Feedback()
 
     var body: some View {
         NavigationStack {
@@ -42,6 +43,19 @@ struct SettingsView: View {
                         Label("Connect Apple Health", systemImage: "heart.fill")
                     }
                     Text("Garmin syncs into Apple Health on its own schedule, so steps refresh when you open Done.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Section("Feedback") {
+                    NavigationLink {
+                        FeedbackView(feedback: feedback)
+                    } label: {
+                        LabeledContent {
+                            if feedback.openCount > 0 { Text("\(feedback.openCount) open") }
+                        } label: {
+                            Label("Report an issue", systemImage: "ant")
+                        }
+                    }
+                    Text("Something broken or missing? Tell me. I read every message.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
