@@ -39,15 +39,11 @@ struct PomodoroView: View {
             header
             ScrollView {
                 VStack(spacing: 24) {
+                    status
                     dial
                     playButton
                     VStack(spacing: 12) {
                         tiles
-                        if !blocks.isAuthorized {
-                            Text("Grant Screen Time access in Settings to block apps during focus.")
-                                .font(.caption).foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
                         tally
                     }
                     .padding(.top, 4)
@@ -70,26 +66,13 @@ struct PomodoroView: View {
     }
 
     /// Same size and spacing as the Insights header, so "focus" sits where
-    /// "insights" does one tab over. Apps and alarm live up here as status,
-    /// out of the way of the timer.
+    /// "insights" does one tab over.
     private var header: some View {
-        HStack(spacing: 10) {
-            Text("focus").font(.title2.weight(.bold))
-            Spacer(minLength: 8)
-            Button { picking = true } label: {
-                Label("\(blocks.focusAllowed.applicationTokens.count)", systemImage: "square.grid.2x2.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 14)
-                    .frame(height: 40)
-                    .background(.white.opacity(0.08), in: Capsule())
-            }
-            .disabled(!blocks.isAuthorized)
-            .accessibilityLabel("Apps allowed in focus")
-            .accessibilityValue("\(blocks.focusAllowed.applicationTokens.count)")
-            alarmButton
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
+        Text("focus")
+            .font(.title2.weight(.bold))
+            .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
     }
 
     /// The ring drains as the round runs, in the colour of the running timer.
@@ -237,28 +220,63 @@ struct PomodoroView: View {
         return minutes < 60 ? "\(minutes)m" : "\(minutes / 60)h \(minutes % 60)m"
     }
 
-    /// A round that ends without a sound is a round you miss, so the bell
-    /// turns orange and asks for the permission instead of failing quietly.
-    private var alarmButton: some View {
-        Button {
-            Task {
-                if await requestAlarm() {
-                    alarmOn = true
-                } else if let url = URL(string: UIApplication.openSettingsURLString) {
-                    await UIApplication.shared.open(url)
+    /// Says in words what pressing play will do, above the timer. A missing
+    /// alarm only shows up as a warning: a round that ends without a sound is
+    /// a round you miss, so it asks for the permission instead of failing quietly.
+    private var status: some View {
+        VStack(spacing: 0) {
+            if blocks.isAuthorized {
+                Button { picking = true } label: {
+                    chip(allowedSummary, systemImage: "checkmark.shield.fill", chevron: true)
+                        .foregroundStyle(.secondary)
+                        .background(.white.opacity(0.06), in: Capsule())
+                        .padding(.vertical, 6)   // 44pt hit area around a 32pt chip
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+            } else {
+                Text("Grant Screen Time access in Settings to block apps during focus.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
-        } label: {
-            Image(systemName: alarmOn ? "bell.fill" : "bell.slash")
-                .font(.headline)
-                .foregroundStyle(alarmOn ? Color.white : .orange)
-                .frame(width: 40, height: 40)
-                .background(.white.opacity(0.08), in: Circle())
+            if !alarmOn {
+                Button {
+                    Task {
+                        if await requestAlarm() {
+                            alarmOn = true
+                        } else if let url = URL(string: UIApplication.openSettingsURLString) {
+                            await UIApplication.shared.open(url)
+                        }
+                    }
+                } label: {
+                    chip(hasRealAlarm ? "no alarm · tap to allow" : "no notifications · tap to allow",
+                         systemImage: "bell.slash", chevron: false)
+                        .foregroundStyle(.orange)
+                        .background(.orange.opacity(0.14), in: Capsule())
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .allowsHitTesting(!alarmOn)
-        .accessibilityLabel(alarmOn ? "Alarm on"
-                            : hasRealAlarm ? "Alarm off — tap to allow alarms"
-                                           : "Alarm off — tap to allow notifications")
+    }
+
+    /// Only apps are counted: a whole category can be allowed too, but a
+    /// token for it can't be expanded into the apps it holds.
+    private var allowedSummary: String {
+        let count = blocks.focusAllowed.applicationTokens.count
+        return count == 0 ? "focus blocks every app" : "focus blocks every app except \(count)"
+    }
+
+    private func chip(_ text: String, systemImage: String, chevron: Bool) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+            Text(text)
+            if chevron { Image(systemName: "chevron.right").font(.caption2.weight(.bold)) }
+        }
+        .font(.footnote)
+        .padding(.horizontal, 12)
+        .frame(height: 32)
     }
 
     private func alarmAllowed() async -> Bool {
