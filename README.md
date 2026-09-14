@@ -20,6 +20,20 @@ Pick your iPhone in the toolbar, press ⌘R.
 Signed with a free personal team, so a build expires after 7 days —
 plug the phone back in and run again. A paid account raises that to a year.
 
+### Report an issue (optional)
+
+Settings → Report an issue files a GitHub issue. The app needs a token for that:
+
+1. github.com/settings/personal-access-tokens/new → only `martinss27/done`,
+   permission **Issues: Read and write**, nothing else
+2. Create `Secrets.xcconfig` next to `project.yml` (gitignored):
+   `GITHUB_TOKEN = github_pat_...`
+3. `xcodegen generate`, build
+
+The token is built into the app, so anyone holding the app file could file
+issues with it. Fine for personal installs; put a small server in front before
+the App Store.
+
 ## Check the logic
 
 Streak and progress rules are pure functions with a plain-Swift check,
@@ -60,6 +74,8 @@ the `com.apple.developer.family-controls` entitlement. Personal use does not.
 | `Done/Pomodoro.swift` | Pomodoro cycle rules (pure) |
 | `Done/PomodoroView.swift` | Focus tab: timer, durations, allowlist |
 | `Done/InsightsView.swift` | Screen time layout (sample data) |
+| `Done/Feedback.swift` | Files reports as GitHub issues, tracks open/fixed |
+| `Done/FeedbackView.swift` | Settings → Report an issue: inbox and new-report sheet |
 | `project.yml` | Project spec — edit this, not the `.xcodeproj` |
 
 `Done.xcodeproj` is generated and gitignored. Run `xcodegen generate`
