@@ -96,10 +96,10 @@ struct PomodoroView: View {
     private var dial: some View {
         let total = max(minutes(for: phase) * 60, 1)
         return ZStack {
-            Circle().stroke(.white.opacity(0.08), lineWidth: 10)
+            Circle().stroke(.white.opacity(0.08), lineWidth: 6)
             Circle()
                 .trim(from: 0, to: Double(remaining) / Double(total))
-                .stroke(phase.color, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .stroke(phase.color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 1), value: remaining)
             VStack(spacing: 2) {
