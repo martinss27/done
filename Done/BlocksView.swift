@@ -66,7 +66,7 @@ struct BlocksView: View {
                     Image(systemName: "plus")
                         .font(.title3.weight(.semibold))
                         .frame(width: 44, height: 44)
-                        .background(.white.opacity(0.08), in: Circle())
+                        .background(Color.primary.opacity(0.08), in: Circle())
                 }
             }
         }
@@ -79,14 +79,14 @@ struct BlocksView: View {
                 Image(systemName: "plus")
                     .font(.system(size: 44, weight: .medium))
                     .frame(width: 130, height: 130)
-                    .background(.white.opacity(0.06), in: Circle())
-                    .overlay(Circle().stroke(.white.opacity(0.08), lineWidth: 1))
+                    .background(Color.primary.opacity(0.06), in: Circle())
+                    .overlay(Circle().stroke(Color.primary.opacity(0.08), lineWidth: 1))
             }
             Text("create your first habit!")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
         .padding(.top, 120)
     }
 }
@@ -123,12 +123,12 @@ private struct HabitCard: View {
                 VStack(alignment: .trailing, spacing: 10) {
                     Toggle("", isOn: $habit.isEnabled)
                         .labelsHidden()
-                        .tint(.green)   // app tint is white; without this the knob vanishes into the track
+                        .tint(.green)   // app tint is black/white; without this the knob vanishes into the track
                     Image(systemName: unlocked ? "lock.open.fill" : "lock.fill")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .frame(width: 34, height: 34)
-                        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+                        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
                 }
             }
 
@@ -149,7 +149,7 @@ private struct HabitCard: View {
             }
         }
         .padding(16)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
         .opacity(habit.isEnabled ? 1 : 0.4)
     }
 
@@ -181,14 +181,14 @@ private struct HabitCard: View {
             }
         }
         .frame(width: 60, height: 60)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func chip(_ text: String) -> some View {
         Text(text)
             .font(.caption2.weight(.bold))
             .padding(.horizontal, 8).padding(.vertical, 4)
-            .background(.white.opacity(0.1), in: Capsule())
+            .background(Color.primary.opacity(0.1), in: Capsule())
             .foregroundStyle(.secondary)
     }
 }

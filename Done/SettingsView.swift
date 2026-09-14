@@ -4,11 +4,18 @@ struct SettingsView: View {
     @Bindable var blocks: BlockController
     @Bindable var health: Health
     @Bindable var geofence: Geofence
+    @AppStorage("appearance") private var appearance = Appearance.dark
     @State private var feedback = Feedback()
 
     var body: some View {
         NavigationStack {
             List {
+                Section("Appearance") {
+                    Picker("Appearance", selection: $appearance) {
+                        ForEach(Appearance.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                }
                 Section("App permissions") {
                     if blocks.isAuthorized {
                         Label("Screen Time access granted", systemImage: "checkmark.circle.fill")

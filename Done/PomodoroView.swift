@@ -79,7 +79,7 @@ struct PomodoroView: View {
     private var dial: some View {
         let total = max(minutes(for: phase) * 60, 1)
         return ZStack {
-            Circle().stroke(.white.opacity(0.08), lineWidth: 6)
+            Circle().stroke(Color.primary.opacity(0.08), lineWidth: 6)
             Circle()
                 .trim(from: 0, to: Double(remaining) / Double(total))
                 .stroke(phase.color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
@@ -105,9 +105,9 @@ struct PomodoroView: View {
         Button { isRunning ? pause() : start() } label: {
             Image(systemName: isRunning ? "pause.fill" : "play.fill")
                 .font(.system(size: 30))
-                .foregroundStyle(.black)
+                .foregroundStyle(Color(.systemBackground))
                 .frame(width: 76, height: 76)
-                .background(.white, in: Circle())
+                .background(Color.primary, in: Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isRunning ? "Pause" : "Start \(phase.title)")
@@ -122,7 +122,7 @@ struct PomodoroView: View {
             tile(.longBreak, $longBreakMinutes, 5...60, step: 5)
         }
         .padding(6)
-        .background(.white.opacity(0.06), in: .rect(cornerRadius: 20))
+        .background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 20))
     }
 
     private func tile(_ row: PomodoroPhase, _ length: Binding<Int>, _ range: ClosedRange<Int>, step: Int) -> some View {
@@ -150,7 +150,7 @@ struct PomodoroView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(armed ? Color.white.opacity(0.1) : .clear, in: .rect(cornerRadius: 15))
+        .background(armed ? Color.primary.opacity(0.1) : .clear, in: .rect(cornerRadius: 15))
         .contentShape(.rect(cornerRadius: 15))
         .onTapGesture { select(row) }
         .accessibilityAction(named: "Select \(row.title)") { select(row) }
@@ -165,7 +165,7 @@ struct PomodoroView: View {
                 .font(.caption.weight(.bold))
                 .foregroundStyle(enabled ? .primary : .tertiary)
                 .frame(width: 26, height: 26)
-                .background(.white.opacity(0.08), in: Circle())
+                .background(Color.primary.opacity(0.08), in: Circle())
                 .frame(width: 34, height: 34)   // bigger hit area than the circle
                 .contentShape(Circle())
         }
@@ -181,12 +181,12 @@ struct PomodoroView: View {
     private var tally: some View {
         VStack(spacing: 10) {
             HStack {
-                count(.white, "focus", completedFocuses, focusSeconds)
+                count(.primary, "focus", completedFocuses, focusSeconds)
                 count(.green, "short", completedShorts, shortSeconds)
                 count(.blue, "long", completedLongs, longSeconds)
             }
             .padding(.vertical, 14)
-            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
 
             Button("Reset rounds", systemImage: "arrow.counterclockwise") { resetRounds() }
                 .font(.footnote)
@@ -229,7 +229,7 @@ struct PomodoroView: View {
                 Button { picking = true } label: {
                     chip(allowedSummary, systemImage: "checkmark.shield.fill", chevron: true)
                         .foregroundStyle(.secondary)
-                        .background(.white.opacity(0.06), in: Capsule())
+                        .background(Color.primary.opacity(0.06), in: Capsule())
                         .padding(.vertical, 6)   // 44pt hit area around a 32pt chip
                         .contentShape(Rectangle())
                 }
