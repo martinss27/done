@@ -13,8 +13,8 @@ struct FeedbackView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                 }
-                .foregroundStyle(.black)
-                .listRowBackground(Color.white)
+                .foregroundStyle(Color(.systemBackground))
+                .listRowBackground(Color.primary)
             }
             if !feedback.reports.isEmpty {
                 Section {
