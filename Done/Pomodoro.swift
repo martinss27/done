@@ -23,7 +23,7 @@ enum PomodoroPhase: String {
     /// Same colours as the tally dots, so the ring says which timer is running.
     var color: Color {
         switch self {
-        case .focus: .white
+        case .focus: .primary
         case .shortBreak: .green
         case .longBreak: .blue
         }

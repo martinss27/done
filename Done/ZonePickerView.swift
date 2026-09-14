@@ -38,23 +38,22 @@ struct ZonePickerView: View {
             map.overlay(alignment: .top) { search }
             controls
         }
-        .background(Color.black)
-        .preferredColorScheme(.dark)
+        .background(Color(.systemBackground))
     }
 
     private var bar: some View {
         HStack {
             Button("Cancel") { dismiss() }
                 .padding(.horizontal, 20).padding(.vertical, 10)
-                .background(.white.opacity(0.08), in: Capsule())
+                .background(Color.primary.opacity(0.08), in: Capsule())
             Spacer()
             Text("Blocked zone").font(.title3.weight(.semibold))
             Spacer()
             Button("Save") { zone = draft; dismiss() }
                 .padding(.horizontal, 20).padding(.vertical, 10)
-                .background(.white.opacity(0.08), in: Capsule())
+                .background(Color.primary.opacity(0.08), in: Capsule())
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
         .padding(16)
     }
 
@@ -109,7 +108,7 @@ struct ZonePickerView: View {
         VStack(spacing: 14) {
             TextField("Name this place", text: $draft.name)
                 .padding(16)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
 
             HStack(spacing: 12) {
                 Text("Radius").font(.subheadline.weight(.semibold))
@@ -125,7 +124,7 @@ struct ZonePickerView: View {
                 modeTab("Unlock apps here", on: !draft.blockInside)
             }
             .padding(4)
-            .background(.white.opacity(0.07), in: Capsule())
+            .background(Color.primary.opacity(0.07), in: Capsule())
 
             Text(draft.blockInside ? "Apps lock automatically inside the circle"
                  : "Apps stay locked everywhere except inside the circle")
@@ -140,8 +139,8 @@ struct ZonePickerView: View {
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(on ? AnyShapeStyle(.white.opacity(0.18)) : AnyShapeStyle(.clear), in: Capsule())
-                .foregroundStyle(on ? .white : .secondary)
+                .background(on ? AnyShapeStyle(Color.primary.opacity(0.18)) : AnyShapeStyle(.clear), in: Capsule())
+                .foregroundStyle(on ? .primary : .secondary)
         }
         .buttonStyle(.plain)
     }

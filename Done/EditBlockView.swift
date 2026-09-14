@@ -54,8 +54,7 @@ struct EditBlockView: View {
                 .padding(16)
             }
         }
-        .background(Color.black)
-        .preferredColorScheme(.dark)
+        .background(Color(.systemBackground))
         .familyActivityPicker(isPresented: $pickingApps, selection: $apps)
         .familyActivityPicker(isPresented: $pickingUnlockApp, selection: $unlockApps)
         .fullScreenCover(isPresented: $pickingZone) { ZonePickerView(zone: $habit.zone) }
@@ -65,17 +64,17 @@ struct EditBlockView: View {
         HStack {
             Button("Cancel") { dismiss() }
                 .padding(.horizontal, 20).padding(.vertical, 10)
-                .background(.white.opacity(0.08), in: Capsule())
+                .background(Color.primary.opacity(0.08), in: Capsule())
             Spacer()
             Text(editing == nil ? "New block" : "Edit block").font(.title3.weight(.semibold))
             Spacer()
             Button("Save", action: save)
                 .padding(.horizontal, 20).padding(.vertical, 10)
-                .background(.white.opacity(0.08), in: Capsule())
+                .background(Color.primary.opacity(0.08), in: Capsule())
                 .disabled(!canSave)
                 .opacity(canSave ? 1 : 0.4)
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
         .padding(16)
     }
 
@@ -84,7 +83,7 @@ struct EditBlockView: View {
             Image(systemName: "shield.fill")
                 .font(.title2)
                 .frame(width: 56, height: 56)
-                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
             TextField("Name this block", text: $habit.name)
                 .font(.title2.weight(.bold))
         }
@@ -104,7 +103,7 @@ struct EditBlockView: View {
                 }
                 .font(.body.weight(.medium))
                 .padding(16)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
             }
             .buttonStyle(.plain)
         }
@@ -131,13 +130,13 @@ struct EditBlockView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
-        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
         .overlay {
             if active {
-                RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.5), lineWidth: 1.5)
+                RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.5), lineWidth: 1.5)
             }
         }
-        .foregroundStyle(active ? .white : .secondary)
+        .foregroundStyle(active ? .primary : .secondary)
     }
 
     /// The Time tab starts with the range the reference app shows by default.
@@ -173,7 +172,7 @@ struct EditBlockView: View {
                     Image(systemName: "chevron.right").foregroundStyle(.secondary)
                 }
                 .padding(16)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
             }
             .buttonStyle(.plain)
 
@@ -205,7 +204,7 @@ struct EditBlockView: View {
                     }
                 }
                 .padding(12)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
             }
 
             Button { habit.ranges.append(TimeRange()) } label: {
@@ -215,7 +214,7 @@ struct EditBlockView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(14)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
             }
             .buttonStyle(.plain)
 
@@ -224,7 +223,7 @@ struct EditBlockView: View {
                 modeTab("Unblock during", on: !habit.blockDuring)
             }
             .padding(4)
-            .background(.white.opacity(0.07), in: Capsule())
+            .background(Color.primary.opacity(0.07), in: Capsule())
 
             Text(habit.blockDuring ? "Apps are blocked during these times."
                  : "Apps are blocked all day EXCEPT during these times.")
@@ -257,8 +256,8 @@ struct EditBlockView: View {
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(on ? AnyShapeStyle(.white.opacity(0.18)) : AnyShapeStyle(.clear), in: Capsule())
-                .foregroundStyle(on ? .white : .secondary)
+                .background(on ? AnyShapeStyle(Color.primary.opacity(0.18)) : AnyShapeStyle(.clear), in: Capsule())
+                .foregroundStyle(on ? .primary : .secondary)
         }
         .buttonStyle(.plain)
     }
@@ -327,7 +326,7 @@ struct EditBlockView: View {
             .font(.subheadline.weight(.medium))
             .foregroundStyle(unlockCount > 0 ? Color.green : .secondary)
             .padding(14)
-            .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
     }
@@ -345,11 +344,11 @@ struct EditBlockView: View {
                 Image(systemName: "arrow.counterclockwise")
                     .font(.title3)
                     .frame(width: 44, height: 44)
-                    .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                    .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Block again after")
                         .font(.body.weight(.semibold))
-                        .foregroundStyle(available ? .white : .secondary)
+                        .foregroundStyle(available ? .primary : .secondary)
                     Text(available ? "minutes of use before it locks again"
                                    : "needs an App time condition above")
                         .font(.caption).foregroundStyle(.secondary)
@@ -360,7 +359,7 @@ struct EditBlockView: View {
                     .foregroundStyle(habit.blockAgainMinutes == nil ? .secondary : Color.green)
             }
             .padding(14)
-            .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
 
             if available {
                 HStack(spacing: 6) {
@@ -396,10 +395,10 @@ struct EditBlockView: View {
                     .font(.title3)
                     .foregroundStyle(on ? tint : .secondary)
                     .frame(width: 44, height: 44)
-                    .background(on ? tint.opacity(0.25) : .white.opacity(0.08),
+                    .background(on ? tint.opacity(0.25) : Color.primary.opacity(0.08),
                                 in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.title3.weight(.semibold)).foregroundStyle(.white)
+                    Text(title).font(.title3.weight(.semibold)).foregroundStyle(.primary)
                     if let current {
                         Text(current.detail).font(.subheadline).foregroundStyle(tint.opacity(0.9))
                     }
@@ -419,7 +418,7 @@ struct EditBlockView: View {
                 .buttonStyle(.plain)
             }
             .padding(14)
-            .background(on ? tint.opacity(0.12) : .white.opacity(0.07),
+            .background(on ? tint.opacity(0.12) : Color.primary.opacity(0.07),
                         in: RoundedRectangle(cornerRadius: 16))
             .overlay {
                 if on {
@@ -454,7 +453,7 @@ struct EditBlockView: View {
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 11)
-                .background(selected ? tint : .white.opacity(0.08), in: Capsule())
+                .background(selected ? tint : Color.primary.opacity(0.08), in: Capsule())
                 .foregroundStyle(selected ? .white : .secondary)
         }
         .buttonStyle(.plain)
@@ -490,7 +489,7 @@ struct EditBlockView: View {
                                 .font(.caption.weight(.bold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
-                                .background(on ? Color.blue : .white.opacity(0.08), in: Capsule())
+                                .background(on ? Color.blue : Color.primary.opacity(0.08), in: Capsule())
                                 .foregroundStyle(on ? .white : .secondary)
                         }
                         .buttonStyle(.plain)
@@ -526,7 +525,7 @@ private extension View {
     func card() -> some View {
         padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
     }
 }
 

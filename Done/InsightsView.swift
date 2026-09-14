@@ -53,7 +53,7 @@ struct InsightsView: View {
                 Image(systemName: hidden ? "eye.slash" : "eye")
                     .font(.headline)
                     .frame(width: 40, height: 40)
-                    .background(.white.opacity(0.08), in: Circle())
+                    .background(Color.primary.opacity(0.08), in: Circle())
             }
         }
         .padding(.horizontal, 16)
