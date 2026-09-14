@@ -55,7 +55,7 @@ struct SettingsView: View {
                             Label("Report an issue", systemImage: "ant")
                         }
                     }
-                    Text("Something broken or missing? Tell me. I read every message.")
+                    Text("Your feedback shapes what Done becomes.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
