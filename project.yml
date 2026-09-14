@@ -17,11 +17,15 @@ targets:
       - target: DoneMonitor
       - target: DoneShield
       - target: DoneShieldAction
+    configFiles:
+      Debug: Config.xcconfig
+      Release: Config.xcconfig
     info:
       path: Done/Info.plist
       properties:
         UILaunchScreen: {}
         CFBundleDisplayName: Done
+        GitHubToken: $(GITHUB_TOKEN)
         NSSupportsLiveActivities: true
         NSAlarmKitUsageDescription: Rings when a focus round or a break ends.
         NSHealthShareUsageDescription: Reads your steps and workouts so moving can unlock the apps you blocked.
