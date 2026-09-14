@@ -1,0 +1,6 @@
+// Feedback in Settings files GitHub issues with this token. The real value
+// lives in Secrets.xcconfig (gitignored) as one line:
+//   GITHUB_TOKEN = github_pat_...
+// Without it the app builds fine and Send says the token is missing.
+GITHUB_TOKEN =
+#include? "Secrets.xcconfig"

@@ -20,6 +20,8 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>GitHubToken</key>
+	<string>$(GITHUB_TOKEN)</string>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>Rings when a focus round or a break ends.</string>
 	<key>NSHealthShareUsageDescription</key>
