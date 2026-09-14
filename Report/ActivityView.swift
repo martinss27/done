@@ -96,7 +96,7 @@ struct ActivityView: View {
                     ForEach(apps) { row($0) }
                 }
                 .padding(16)
-                .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
 
                 legend
             }
@@ -116,7 +116,7 @@ struct ActivityView: View {
             }
         }
         .padding(.vertical, 14)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
     }
 
     private var summary: some View {
@@ -134,7 +134,7 @@ struct ActivityView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
     }
 
     private func row(_ app: AppRow) -> some View {
