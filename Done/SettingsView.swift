@@ -57,7 +57,7 @@ struct SettingsView: View {
                         LabeledContent {
                             if feedback.openCount > 0 { Text("\(feedback.openCount) open") }
                         } label: {
-                            Label("Report an issue", systemImage: "ant")
+                            Label("Send feedback", systemImage: "bubble.left.and.text.bubble.right")
                         }
                     }
                     Text("Your feedback shapes what Done becomes.")
