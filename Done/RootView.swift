@@ -11,11 +11,11 @@ struct RootView: View {
     var body: some View {
         TabView {
             BlocksView(store: store, blocks: blocks)
-                .tabItem { Label("Blocks", systemImage: "shield.fill") }
+                .tabItem { Label("Blocks", systemImage: "nosign") }
             PomodoroView(store: store, blocks: blocks)
-                .tabItem { Label { Text("Focus") } icon: { tomatoSymbol } }
+                .tabItem { Label("Focus", systemImage: "timer") }
             InsightsView(blocks: blocks)
-                .tabItem { Label("Insights", systemImage: "chart.bar.fill") }
+                .tabItem { Label("Insights", systemImage: "chart.bar.xaxis.ascending") }
             SettingsView(blocks: blocks, health: health, geofence: geofence)
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
