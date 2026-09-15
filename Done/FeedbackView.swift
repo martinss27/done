@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings → Report an issue: what was sent, with its status on GitHub.
+/// Settings → Send feedback: what was sent, with its status on GitHub.
 struct FeedbackView: View {
     @Bindable var feedback: Feedback
     @State private var composing = false
@@ -21,10 +21,11 @@ struct FeedbackView: View {
                     ForEach(feedback.reports) { report in
                         Link(destination: report.url) { row(report) }
                     }
+                    .onDelete(perform: feedback.remove)
                 } header: {
                     Text("Your reports")
                 } footer: {
-                    Text("Status comes from GitHub. When an issue is closed, it shows as fixed here.")
+                    Text("Status comes from GitHub. When an issue is closed, it shows as fixed here. Swipe left to remove one from this list.")
                 }
             }
         }

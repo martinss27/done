@@ -69,6 +69,11 @@ final class Feedback {
         reports.insert(Report(number: created.number, title: title, isIdea: isIdea, date: .now), at: 0)
     }
 
+    /// Only drops it from this list. The issue on GitHub stays as it is.
+    func remove(at offsets: IndexSet) {
+        reports.remove(atOffsets: offsets)
+    }
+
     /// A closed issue shows as fixed. Failures keep the last known status.
     // ponytail: one request per report, fine for dozens; use the list endpoint if it grows.
     func refresh() async {
