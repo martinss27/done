@@ -20,9 +20,9 @@ Pick your iPhone in the toolbar, press ⌘R.
 Signed with a free personal team, so a build expires after 7 days —
 plug the phone back in and run again. A paid account raises that to a year.
 
-### Report an issue (optional)
+### Send feedback (optional)
 
-Settings → Report an issue files a GitHub issue. The app needs a token for that:
+Settings → Send feedback files a GitHub issue. The app needs a token for that:
 
 1. github.com/settings/personal-access-tokens/new → only `martinss27/done`,
    permission **Issues: Read and write**, nothing else
@@ -75,7 +75,7 @@ the `com.apple.developer.family-controls` entitlement. Personal use does not.
 | `Done/PomodoroView.swift` | Focus tab: timer, durations, allowlist |
 | `Done/InsightsView.swift` | Screen time layout (sample data) |
 | `Done/Feedback.swift` | Files reports as GitHub issues, tracks open/fixed |
-| `Done/FeedbackView.swift` | Settings → Report an issue: inbox and new-report sheet |
+| `Done/FeedbackView.swift` | Settings → Send feedback: inbox and new-report sheet |
 | `project.yml` | Project spec — edit this, not the `.xcodeproj` |
 
 `Done.xcodeproj` is generated and gitignored. Run `xcodegen generate`

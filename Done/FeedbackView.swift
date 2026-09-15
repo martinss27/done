@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings → Report an issue: what was sent, with its status on GitHub.
+/// Settings → Send feedback: what was sent, with its status on GitHub.
 struct FeedbackView: View {
     @Bindable var feedback: Feedback
     @State private var composing = false
